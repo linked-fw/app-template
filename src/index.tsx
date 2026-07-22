@@ -13,7 +13,17 @@ import './linked.frontend.storage';
 window['$RefreshReg$'] = () => {};
 window['$RefreshSig$'] = () => () => {};
 
+// OD-8 interim (editor-preview build only): install the visual-builder editor
+// runtime — plan-node stamping + the in-iframe select/hover bridge — BEFORE any
+// linked component renders. Compiled out of stock builds (define-gated).
+declare const __LINKED_EDITOR_BUILD__: boolean | undefined;
+const editorReady =
+  typeof __LINKED_EDITOR_BUILD__ !== 'undefined' && __LINKED_EDITOR_BUILD__
+    ? import('@create-now/editor')
+    : Promise.resolve();
+
 initFrontend().then(async () => {
+  await editorReady;
   // Preload matched route before hydration to avoid Suspense mismatch
   await preloadMatchedRoute();
 
