@@ -54,7 +54,27 @@ const base = createViteConfig({
   cssMode: 'tailwind',
 });
 
+// The STOCK build must still DEFINE the flag — as false.
+//
+// `index.tsx` guards the editor import with
+// `typeof __LINKED_EDITOR_BUILD__ !== 'undefined' && __LINKED_EDITOR_BUILD__`,
+// and the comment above claims that is "compiled out of stock builds". It was
+// not: leaving the identifier UNDEFINED means the `typeof` cannot fold at build
+// time, so the branch stays live and Rollup must still resolve
+// `import('@create-now/editor')` — a package stock apps do not (and must not)
+// depend on. Every production build of every generated app therefore failed:
+//
+//   [vite]: Rollup failed to resolve import "@create-now/editor"
+//           from "src/index.tsx"
+//
+// Defining it as the literal `false` makes the guard fold to `false`, the
+// import becomes unreachable, and it is tree-shaken before resolution is ever
+// attempted. Found running plan-045's gate 5 (does a builder-emitted app still
+// work in a real production build with no editor runtime) — which is exactly
+// the class of thing that gate exists to catch before anything depends on it.
+const stockConfig = {define: {__LINKED_EDITOR_BUILD__: 'false'}};
+
 export default defineConfig(async (env) => {
   const resolved = typeof base === 'function' ? await (base as any)(env) : base;
-  return EDITOR_PREVIEW ? mergeConfig(resolved, editorPreviewConfig) : resolved;
+  return mergeConfig(resolved, EDITOR_PREVIEW ? editorPreviewConfig : stockConfig);
 });
