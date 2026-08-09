@@ -25,7 +25,86 @@
 @import '@_linked/css/theme-defaults.css';
 @import '@_linked/css/utilities.css';
 
+/* ══ THE SCALES A TOOL READS AT RUNTIME — `@theme static` ═══════════════════
+   Tailwind v4 emits a theme variable only where something REFERENCES it, and it
+   applies that to its own defaults as well as to yours. A stock app therefore
+   ships exactly ONE `--container-*` in its built CSS (`--container-7xl`, and
+   only because a scanned `max-w-7xl` pulls it in), and exactly ONE semantic
+   `--spacing-*` (`--spacing-section`, pulled in by `@_linked/css/utilities.css`)
+   — even though the source below declares the whole set. Declaring is not
+   emitting.
+
+   That is harmless for utility classes, which carry their own reference. It is
+   NOT harmless for anything that reads the scale at RUNTIME, off the document,
+   which is exactly what the CN visual builder does: it enumerates the live
+   `--container-*` and `--spacing-*` custom properties and uses them as its
+   detent ladders (plan-042 S1d/S4, plan-045 finding 17). Tree-shaken to one
+   rung, a ladder is not a ladder — the builder's named widths (reading /
+   content / wide) become unreachable and the width grip degrades to a raw-px
+   tool. And because an UNDEFINED custom property makes `max-width:
+   var(--container-5xl)` resolve to `none`, a layout that asks for a width
+   silently gets no width at all, with no error anywhere.
+
+   `@theme static` is Tailwind's own "emit these regardless of use". Nothing
+   here is a new design decision: the container values are Tailwind's defaults
+   restated verbatim (so every `max-w-*` utility is byte-for-byte unchanged) and
+   the spacing/gap values are the ones this file already declared. Retune a rung
+   by editing it — the builder picks the new value up on its next preview boot.
+   ══════════════════════════════════════════════════════════════════════════ */
+@theme static {
+  /* === Container width scale (Tailwind defaults, pinned into the output) === */
+  --container-3xs: 16rem;
+  --container-2xs: 18rem;
+  --container-xs: 20rem;
+  --container-sm: 24rem;
+  --container-md: 28rem;
+  --container-lg: 32rem;
+  --container-xl: 36rem;
+  --container-2xl: 42rem;
+  --container-3xl: 48rem; /* builder: "reading" */
+  --container-4xl: 56rem;
+  --container-5xl: 64rem; /* builder: "content" */
+  --container-6xl: 72rem;
+  --container-7xl: 80rem; /* builder: "wide" */
+
+  /* === Semantic Spacing ===
+     @_linked/css `utilities.css` CONSUMES a semantic spacing set
+     (--spacing-card|modal|popover|section|element-x|element-y) that
+     `theme-defaults.css` never DEFINES — an app without local definitions
+     silently gets unset spacing. Same CN-fills-the-gap pattern as the
+     Semantic Radius Overrides below; promote to @_linked/css when it ships
+     them (see the LOOM/framework handoff A9). */
+  --spacing-card: calc(var(--spacing) * 4); /* padding inside a card surface */
+  --spacing-section: calc(var(--spacing) * 8); /* padding of a page section */
+  --spacing-modal: calc(var(--spacing) * 6); /* padding inside a dialog */
+  --spacing-popover: calc(var(--spacing) * 3); /* padding inside a popover */
+  --spacing-element-x: calc(var(--spacing) * 3); /* inline padding of controls */
+  --spacing-element-y: calc(var(--spacing) * 2); /* block padding of controls */
+
+  /* === Semantic Gaps (CN — no framework equivalent; see docs/backlog/020) ===
+     GAP is its own namespace: in this system `--spacing-*` means PADDING
+     (utilities.css uses it that way), so a gap living there would be confused
+     with padding forever. Axis is LOGICAL (block/inline) to match CSS
+     row-gap/column-gap under writing modes, and to match the paddingBlock/
+     paddingInline the builder already emits (042 S1b). Block rhythm is
+     normally LOOSER than inline — that asymmetry is the point of two tokens.
+     The visual builder mints every container with a gap (plan-044). */
+  --gap-block: calc(var(--spacing) * 4); /* vertical rhythm: stacked children */
+  --gap-block-tight: calc(var(--spacing) * 2);
+  --gap-block-loose: calc(var(--spacing) * 8);
+  --gap-inline: calc(var(--spacing) * 2); /* horizontal rhythm: rows, toolbars */
+  --gap-inline-tight: calc(var(--spacing) * 1);
+  --gap-inline-loose: calc(var(--spacing) * 4);
+  /* Role aliases — only where a role genuinely differs from the axis default,
+     each defined IN TERMS OF the axis tokens so there is one scale. */
+  --gap-form: var(--gap-block); /* form rows */
+  --gap-toolbar: var(--gap-inline); /* button groups, toolbars */
+  --gap-grid-block: var(--gap-block);
+  --gap-grid-inline: var(--gap-inline);
+}
+
 @theme {
+
     /* === Primary palette — Linked teal-blue === */
     --color-primary-50:  #f7fbfd;
     --color-primary-100: #eef7fb;
@@ -86,6 +165,7 @@
     --z-overlay: 75;
     --z-tooltip: 100;
 
-    /* === Spacing tokens === */
-    --spacing-card: calc(var(--spacing) * 4);
+    /* Semantic spacing lives in the `@theme static` block at the top of this
+       file — a duplicate declaration HERE would re-declare the key in a
+       non-static block and un-pin it from the output. */
 }
