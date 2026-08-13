@@ -74,7 +74,36 @@ const base = createViteConfig({
 // the class of thing that gate exists to catch before anything depends on it.
 const stockConfig = {define: {__LINKED_EDITOR_BUILD__: 'false'}};
 
+// ── HMR websocket port, derived from the app's own PORT (plan-044 round 20) ─
+// `createViteConfig` runs Vite in `middlewareMode`, where the HMR websocket
+// gets its OWN server on Vite's fixed default 24678 — a port nothing allocates
+// and nothing checks (the published @_linked/cli, 1.11.x, derives nothing).
+// A second CN stack (or a second branch app) already holding it makes this app
+// log `WebSocket server error: Port 24678 is already in use` and then run with
+// NO HMR AT ALL: every land rewrites the page module, the dev server reports
+// `hmr update`, and the preview never hears it. The builder shows a green
+// "All changes saved" over a preview that has silently stopped updating.
+//
+// The scheme, in precedence order:
+//  1. `CN_APP_HMR_PORT` — injected by CN's ChildProcessProvisioner, which
+//     probes it for freeness the same way it probes `PORT` (and falls back to
+//     the 24400–24599 overflow band when something external holds the slot).
+//  2. `PORT + 20000` — deterministic fallback for non-CN spawns (or an older
+//     CN that doesn't inject yet). Branch-app HTTP ports are machine-wide
+//     unique (the provisioner TCP-probes them at spawn), so the derived band
+//     24010–24399 is collision-free across parallel CN stacks with zero
+//     coordination, avoids Vite's default 24678, and contains no
+//     browser-restricted (ERR_UNSAFE_PORT) ports.
+//  3. 24678 — Vite's default, only when there is no PORT at all (a bare
+//     standalone `yarn start`).
+const port = Number(process.env.PORT ?? 0);
+const hmrPort =
+  Number(process.env.CN_APP_HMR_PORT ?? 0) || (port ? port + 20000 : 24678);
+
 export default defineConfig(async (env) => {
   const resolved = typeof base === 'function' ? await (base as any)(env) : base;
-  return mergeConfig(resolved, EDITOR_PREVIEW ? editorPreviewConfig : stockConfig);
+  return mergeConfig(
+    mergeConfig(resolved, {server: {hmr: {port: hmrPort}}}),
+    EDITOR_PREVIEW ? editorPreviewConfig : stockConfig,
+  );
 });
