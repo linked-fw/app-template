@@ -33,23 +33,16 @@ The home page in this app demonstrates the full chain end-to-end with `@_linked/
 
 ## Install + run
 
-With npm:
+This app installs with **npm** (`packageManager: npm@11.19.1`):
 
 ```bash
 npm install
 npm start
 ```
 
-Or with yarn:
-
-```bash
-yarn install
-yarn start
-```
-
 The home page demonstrates the `@_linked` query DSL with a small Person CRUD — see `src/components/PersonOverview.tsx` and `src/components/PersonPreview.tsx`.
 
-> If you scaffolded this app **inside an existing Yarn-workspace monorepo** (e.g. `packages/` of another repo), use `yarn install` — `npm install` walks up to the workspace root and may hit peer-dep conflicts there. Outside a workspace, either tool works.
+> No lockfile is committed: the template tracks the published `@_linked/*` packages by caret range, and `npm install` resolves and writes your app's own `package-lock.json` on first install. Commit that lockfile in your app.
 
 ## Storage
 
