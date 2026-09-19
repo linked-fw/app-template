@@ -73,7 +73,7 @@
     "typescript-plugin-css-modules": "^5.1.0",
     "which": "^3.0.1"
   },
-  "packageManager": "yarn@3.6.1",
+  "packageManager": "npm@11.19.1",
   "repository": {
     "type": "git",
     "url": "git@github.com:linked-cm/app-template.git"
