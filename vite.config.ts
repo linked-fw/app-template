@@ -3,8 +3,8 @@
 // to every linked app via a cli bump.
 //
 // Run with:
-//   npm start          (Vite dev — plan-010 default once stable)
-//   npm run start:webpack  (legacy webpack path — migration escape hatch)
+//   npm start          (Vite dev server)
+//   npm run build      (production build: Vite client bundle + tsc backend)
 import {createViteConfig} from '@_linked/cli/vite-config';
 
 export default createViteConfig({

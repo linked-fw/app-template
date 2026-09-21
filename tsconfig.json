@@ -1,5 +1,7 @@
 {
   "compilerOptions": {
+    "outDir": "./lib",
+    "rootDir": "./src",
     "module": "esnext",
     "moduleResolution": "bundler",
     "sourceMap": true,

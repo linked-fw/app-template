@@ -1,8 +1,8 @@
 // Frontend storage config.
 //
 // Reads linked.frontend.datasets.json and instantiates one store per
-// alias. Webpack can't bundle dynamic imports of arbitrary npm paths,
-// so on the frontend we import each store class explicitly and
+// alias. A bundler can't statically resolve dynamic imports of arbitrary
+// npm paths, so on the frontend we import each store class explicitly and
 // construct it per-alias here.
 //
 // Aliases on this side are independent from backend aliases — the
@@ -17,8 +17,10 @@ import { getAccessUrlLocalFileStore } from '@_linked/server/utils/accessUrl';
 // import { FusekiStore } from '@_linked/fuseki/shapes/FusekiStore';
 
 // Parse JSON; pass empty env since the browser has no runtime process.env.
-// Per-env values for the frontend should be hardcoded `process.env.X`
-// references (webpack inlines them at build time).
+// Per-env values for the frontend should be written as literal
+// `process.env.X` references and declared in the Vite config's `define`
+// (see `createViteConfig({define: {...}})` in vite.config.ts) so Vite
+// inlines them at build time. Only reference public values here.
 const config = parseDatasetsConfig(datasetsConfig, {});
 
 // One store per alias. Each line imports the class above and constructs it

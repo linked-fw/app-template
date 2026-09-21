@@ -5,14 +5,12 @@ import { Spinner } from './components/Spinner';
 import PageNotFound from './pages/PageNotFound';
 import { lazyWithPreload } from './utils/lazyWithPreload';
 
-// Create preloadable lazy components for direct-entry routes
-const HomePage = lazyWithPreload(
-  () => import(/* webpackChunkName: "home" */ './pages/Home')
-);
+// Create preloadable lazy components for direct-entry routes.
+// `preloadChunks` below names the page module by its source basename
+// (e.g. 'Home' -> src/pages/Home.tsx), which is how the Vite manifest is keyed.
+const HomePage = lazyWithPreload(() => import('./pages/Home'));
 
-const SigninPage = lazyWithPreload(
-  () => import(/* webpackChunkName: "signin" */ './pages/Signin')
-);
+const SigninPage = lazyWithPreload(() => import('./pages/Signin'));
 
 // Export preloadable components for server-side preloading
 export const PRELOADABLE_ROUTES = {
@@ -26,15 +24,13 @@ export const ROUTES: RoutesConfig = {
     path: '/',
     component: HomePage.Component,
     label: 'Home',
-    preloadChunks: ['home'],
+    preloadChunks: ['Home'],
   },
   page1: {
     path: '/page1',
-    component: lazy(
-      () => import(/* webpackChunkName: "page1" */ './pages/Page1')
-    ),
+    component: lazy(() => import('./pages/Page1')),
     label: 'Components',
-    preloadChunks: ['page1'],
+    preloadChunks: ['Page1'],
     // To make this route sign-in-protected, install `@_linked/auth`, wire up
     // a `<ProvideAuth>` provider in App.tsx, import RequireAuth here, and
     // set `requireAuth: true` on this route.
@@ -44,7 +40,7 @@ export const ROUTES: RoutesConfig = {
     component: SigninPage.Component,
     label: 'Sign In',
     excludeFromMenu: true,
-    preloadChunks: ['signin'],
+    preloadChunks: ['Signin'],
   },
 };
 
