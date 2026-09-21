@@ -1,3 +1,9 @@
+// Staging process definition.
+//
+// `server:staging` runs the same production entry as pm2.config.js
+// (`linked serve-app`), with the `staging` env profile selected. It serves the
+// compiled build — never Vite — so `npm run build` (linked build-app) must have
+// run first, or serve-app exits with "Compiled app artifact is missing".
 module.exports = {
   apps: [
     {

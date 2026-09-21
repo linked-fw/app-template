@@ -73,9 +73,30 @@ All of these are referenced as `${VAR:-default}` placeholders in `linked.backend
 
 ## Build for production
 
+Production runs the **compiled** app — `linked serve-app` — which never starts
+Vite or a file watcher. `npm run build` (`linked build-app`) must have run
+first: `serve-app` refuses to boot unless `lib/App.js`, `lib/routes.js`,
+`lib/backend.js` and `public/bundles/.vite/manifest.json` all exist, and exits
+with `Compiled app artifact is missing: … Run linked build-app before linked
+serve-app.` otherwise.
+
+```bash
+npm run build        # linked build-app — compiles backend + client bundles
+npm run server:prod  # linked serve-app — serves the compiled build
+```
+
+`npm start` (`linked start`) is the **development** entry: it boots Vite with
+HMR and must not be used to deploy.
+
+### Deploying with pm2
+
+Two pm2 process files ship with the template; both run the compiled entry, so
+build before (re)starting either:
+
 ```bash
 npm run build
-npm run server:prod
+pm2 start pm2.config.js          # production  → npm run server:prod
+pm2 start pm2-staging.config.js  # staging     → npm run server:staging
 ```
 
 ## Learn more
