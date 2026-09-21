@@ -9,10 +9,6 @@ import { preloadMatchedRoute } from './utils/preloadRoutes';
 //import the storage & file configuration for the frontend
 import './linked.frontend.storage';
 
-//to avoid errors with react-refresh-webpack-plugin
-window['$RefreshReg$'] = () => {};
-window['$RefreshSig$'] = () => () => {};
-
 initFrontend().then(async () => {
   // Preload matched route before hydration to avoid Suspense mismatch
   await preloadMatchedRoute();
