@@ -1,5 +1,6 @@
 node_modules
 build
+lib
 mrgit.json
 public/bundles
 data/uploads
