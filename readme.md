@@ -76,16 +76,19 @@ All of these are referenced as `${VAR:-default}` placeholders in `linked.backend
 The server refuses raw SPARQL (`POST /api/select-raw`) unless an app registers a
 raw query authorizer, because a raw query cannot be checked for what it reads.
 This template registers one (`src/backend/serviceTokenAuthorizer.ts`) that
-accepts only requests signed by Create Now for this app:
+accepts only requests signed by Create Now for this app and this query:
 
 | Header | Value |
 |---|---|
 | `x-cn-service-timestamp` | unix time in ms; refused when more than 5 minutes from the app's clock |
-| `x-cn-service-token` | hex `HMAC-SHA256(CN_APP_SERVICE_SECRET, "<APP_ID>:<timestamp>")` |
+| `x-cn-service-token` | hex `HMAC-SHA256(CN_APP_SERVICE_SECRET, "<APP_ID>:<timestamp>:<sha256hex(query)>")` |
 
 | Env var | Meaning |
 |---|---|
 | `APP_ID` | the id Create Now signs for this app |
+
+`query` is the exact SPARQL text the app receives in the request body's
+`query` field, so a token only authorizes the query it was signed for.
 | `CN_APP_SERVICE_SECRET` | the secret shared with Create Now |
 
 Create Now sets both when it hosts the app. With either unset, every raw query

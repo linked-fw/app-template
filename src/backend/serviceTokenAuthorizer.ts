@@ -1,14 +1,18 @@
 // Raw SPARQL (`/api/select-raw`) cannot be analysed for what it touches, so the
 // server refuses it unless the app registers a raw query authorizer. The only
 // caller this template expects is the Create Now backend, which signs each
-// request with a service token for this app:
+// request with a service token for this app and this query:
 //
 //   x-cn-service-timestamp: <unix ms>
-//   x-cn-service-token:     hex(HMAC-SHA256(CN_APP_SERVICE_SECRET, `${APP_ID}:${timestamp}`))
+//   x-cn-service-token:     hex(HMAC-SHA256(CN_APP_SERVICE_SECRET,
+//                             `${APP_ID}:${timestamp}:${hex(SHA-256(query))}`))
+//
+// `query` is the exact SPARQL text the app receives, so a captured token cannot
+// be reused with another query.
 //
 // Anything else is refused. Without CN_APP_SERVICE_SECRET or APP_ID every raw
 // query is refused.
-import { createHmac, timingSafeEqual } from 'node:crypto';
+import { createHash, createHmac, timingSafeEqual } from 'node:crypto';
 import { ServerCallError } from '@_linked/server-utils/utils/ServerCallError';
 import type { RawQueryAuthorizer } from '@_linked/server-utils/utils/QueryAccess';
 
@@ -26,14 +30,16 @@ export interface ServiceTokenOptions {
   now?: () => number;
 }
 
-/** hex(HMAC-SHA256(secret, `${appId}:${timestamp}`)) */
+/** hex(HMAC-SHA256(secret, `${appId}:${timestamp}:${hex(SHA-256(query))}`)) */
 export function signServiceToken(
   secret: string,
   appId: string,
   timestamp: string | number,
+  query: string,
 ): string {
+  const queryHash = createHash('sha256').update(query, 'utf8').digest('hex');
   return createHmac('sha256', secret)
-    .update(`${appId}:${timestamp}`)
+    .update(`${appId}:${timestamp}:${queryHash}`)
     .digest('hex');
 }
 
@@ -42,13 +48,17 @@ function header(request: any, name: string): string | undefined {
   return typeof value === 'string' ? value : undefined;
 }
 
-/** True when the request carries a valid, current service token for `appId`. */
+/**
+ * True when the request carries a valid, current service token for `appId`
+ * and this exact `query` text.
+ */
 export function verifyServiceToken(
   request: any,
+  query: unknown,
   o: ServiceTokenOptions,
 ): boolean {
   const { secret, appId } = o;
-  if (!secret || !appId) return false;
+  if (!secret || !appId || typeof query !== 'string') return false;
   const token = header(request, SERVICE_TOKEN_HEADER);
   const timestamp = header(request, SERVICE_TIMESTAMP_HEADER);
   if (!token || !timestamp || !/^\d{1,16}$/.test(timestamp)) return false;
@@ -56,7 +66,7 @@ export function verifyServiceToken(
   if (Math.abs(now - Number(timestamp)) > SERVICE_TOKEN_WINDOW_MS) return false;
   if (!/^[0-9a-f]{64}$/i.test(token)) return false;
   const expected = Buffer.from(
-    signServiceToken(secret, appId, timestamp),
+    signServiceToken(secret, appId, timestamp, query),
     'hex',
   );
   const given = Buffer.from(token, 'hex');
@@ -77,8 +87,9 @@ export function createServiceTokenAuthorizer(
       '[app] CN_APP_SERVICE_SECRET or APP_ID is not set: raw SPARQL (/api/select-raw) is refused.',
     );
   }
-  return ({ request }) => {
-    if (!verifyServiceToken(request, options)) {
+  // `query` is the raw SPARQL text exactly as the server received it.
+  return ({ request, query }) => {
+    if (!verifyServiceToken(request, query, options)) {
       throw new ServerCallError(403, 'Query not permitted');
     }
   };

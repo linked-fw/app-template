@@ -1,4 +1,5 @@
 import { test } from 'node:test';
+import { createHash, createHmac } from 'node:crypto';
 import assert from 'node:assert/strict';
 import {
   createServiceTokenAuthorizer,
@@ -10,9 +11,11 @@ const SECRET = 'test-secret';
 const APP_ID = 'https://create.now/workspace/ws/app/example';
 const NOW = 1_800_000_000_000;
 
-function ctx(headers: Record<string, string> = {}) {
+const QUERY = 'SELECT * WHERE { ?s ?p ?o }';
+
+function ctx(headers: Record<string, string> = {}, query: unknown = QUERY) {
   return {
-    query: 'SELECT * WHERE { ?s ?p ?o }',
+    query,
     endpoint: 'api/select-raw',
     request: { headers },
     linkedAuth: undefined,
@@ -21,7 +24,7 @@ function ctx(headers: Record<string, string> = {}) {
 function signed(timestamp = NOW, appId = APP_ID, secret = SECRET) {
   return ctx({
     'x-cn-service-timestamp': String(timestamp),
-    'x-cn-service-token': signServiceToken(secret, appId, timestamp),
+    'x-cn-service-token': signServiceToken(secret, appId, timestamp, QUERY),
   });
 }
 const authorize = createServiceTokenAuthorizer({
@@ -64,7 +67,7 @@ test('refuses a token that does not match its timestamp', () => {
 });
 
 test('refuses malformed tokens and timestamps', () => {
-  const token = signServiceToken(SECRET, APP_ID, NOW);
+  const token = signServiceToken(SECRET, APP_ID, NOW, QUERY);
   refused(
     ctx({
       'x-cn-service-timestamp': String(NOW),
@@ -111,4 +114,19 @@ test('refuses everything when the secret or app id is not configured', () => {
   } finally {
     console.warn = quiet;
   }
+});
+
+test('signs appId:timestamp:sha256hex(query)', () => {
+  const hash = createHash('sha256').update(QUERY).digest('hex');
+  const expected = createHmac('sha256', SECRET)
+    .update(`${APP_ID}:${NOW}:${hash}`)
+    .digest('hex');
+  assert.equal(signServiceToken(SECRET, APP_ID, NOW, QUERY), expected);
+});
+
+test('refuses a token replayed with another query', () => {
+  const c = signed();
+  refused({ ...c, query: QUERY + ' LIMIT 1' });
+  refused({ ...c, query: 'DELETE WHERE { ?s ?p ?o }' });
+  refused({ ...c, query: undefined });
 });
