@@ -34,7 +34,8 @@
     "lint:fix": "npm run lint -- --fix",
     "prettier": "prettier \"src/**/*.{js,jsx,ts,tsx,css,scss}\" --check",
     "prettier:fix": "npm run prettier -- --write",
-    "format": "npm run prettier:fix && npm run lint:fix"
+    "format": "npm run prettier:fix && npm run lint:fix",
+    "test": "node --experimental-strip-types --no-warnings=ExperimentalWarning --test \"test/*.test.ts\""
   },
   "keywords": [
     "linked",
@@ -50,8 +51,8 @@
     "@_linked/fuseki": "^2.0",
     "@_linked/react": "^1.4",
     "@_linked/schema": "^1.0.6",
-    "@_linked/server": "^2.1",
-    "@_linked/server-utils": "^1.0.6",
+    "@_linked/server": "^2.20.0",
+    "@_linked/server-utils": "^1.9.0",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
     "react-error-boundary": "^3.1.3",
