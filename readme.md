@@ -71,6 +71,21 @@ Defaults shipped:
 
 All of these are referenced as `${VAR:-default}` placeholders in `linked.backend.datasets.json`, so you can either edit the JSON directly or set env vars.
 
+## Shape IRIs (`LINKED_BASE_URI`)
+
+A shape `Foo` declared with this app's `linkedShape` gets the IRI
+`<root>shape/app/Foo` (the package id is the one in `src/package.ts`). The root
+comes from `LINKED_BASE_URI`; unset, it is the framework default
+`https://linked.cm/`, which every app built from this template shares. A host
+that runs apps for several owners should give each owner its own root, for
+example `LINKED_BASE_URI=https://acme.example.org/`, so one app cannot claim
+another's shape IRIs.
+
+The server reads the variable when it starts, and the client bundle inlines it
+when it is built (`vite.config.ts`), so **build and run with the same value**: a
+shape with a different IRI in the browser than on the server is a different
+shape.
+
 ## Raw SPARQL and Create Now
 
 The server refuses raw SPARQL (`POST /api/select-raw`) unless an app registers a
