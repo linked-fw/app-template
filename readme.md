@@ -86,29 +86,13 @@ when it is built (`vite.config.ts`), so **build and run with the same value**: a
 shape with a different IRI in the browser than on the server is a different
 shape.
 
-## Raw SPARQL and Create Now
+## Raw SPARQL
 
-The server refuses raw SPARQL (`POST /api/select-raw`) unless an app registers a
-raw query authorizer, because a raw query cannot be checked for what it reads.
-This template registers one (`src/backend/serviceTokenAuthorizer.ts`) that
-accepts only requests signed by Create Now for this app and this query:
-
-| Header | Value |
-|---|---|
-| `x-cn-service-timestamp` | unix time in ms; refused when more than 5 minutes from the app's clock |
-| `x-cn-service-token` | hex `HMAC-SHA256(CN_APP_SERVICE_SECRET, "<APP_ID>:<timestamp>:<sha256hex(query)>")` |
-
-| Env var | Meaning |
-|---|---|
-| `APP_ID` | the id Create Now signs for this app |
-
-`query` is the exact SPARQL text the app receives in the request body's
-`query` field, so a token only authorizes the query it was signed for.
-| `CN_APP_SERVICE_SECRET` | the secret shared with Create Now |
-
-Create Now sets both when it hosts the app. With either unset, every raw query
-is refused. Replace or extend the authorizer if your app has other raw-query
-callers.
+`POST /api/select-raw` runs raw SPARQL against the default store. A raw query
+cannot be checked for what it reads, so the server's `rawQueries` setting
+decides who may run one: `'session'` (the default) allows any signed-in
+session, `'off'` refuses every raw query. Set it in `linked.config.js`
+(`server: { rawQueries: 'off' }`) or with `LINKED_RAW_QUERIES`.
 
 Run the tests with `npm test` (Node 22.6 or later).
 
