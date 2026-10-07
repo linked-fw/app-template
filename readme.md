@@ -52,7 +52,10 @@ This app talks to an Apache Jena Fuseki SPARQL endpoint. Start a local Fuseki co
 docker run -d --rm -p 3030:3030 --name fuseki stain/jena-fuseki
 ```
 
-The app auto-creates its dataset on first boot.
+The app auto-creates its dataset on first boot. A host that provisions the
+dataset itself sets `LINKED_DATASET_ENSURE=0` (Create Now does): the app then
+only checks that the dataset exists and logs an error if it does not, so a lost
+dataset is reported instead of silently re-created empty. Unset means on.
 
 **Storage config lives in three files**, per the spec in [`@_linked/cli` docs](https://www.npmjs.com/package/@_linked/cli):
 
