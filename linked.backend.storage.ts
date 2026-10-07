@@ -10,17 +10,34 @@ import { LinkedStorage } from '@_linked/core/utils/LinkedStorage';
 import { LinkedFileStorage } from '@_linked/core/utils/LinkedFileStorage';
 import type { FusekiStore } from '@_linked/fuseki/shapes/FusekiStore';
 import { LocalFileStore } from '@_linked/server/shapes/filestores/LocalFileStore';
+import { shouldEnsureDataset } from './src/utils/datasetEnsure';
 
 // Resolve ${VAR} placeholders against the runtime environment, then
 // instantiate each store class declared in the JSON.
 const config = parseDatasetsConfig(datasetsConfig, process.env);
 const stores = await loadStores(config);
 
-// Auto-create the dataset on first boot.
+// Auto-create the dataset on first boot — unless the host provisions it
+// (LINKED_DATASET_ENSURE=0, see src/utils/datasetEnsure.ts). Then only check,
+// and say so loudly when it is missing rather than create an empty one.
 const appData = stores.appData as FusekiStore;
-appData.ensureDatasetExists().catch((err) =>
-  console.warn('dataset ensure failed:', err),
-);
+if (shouldEnsureDataset(process.env.LINKED_DATASET_ENSURE)) {
+  appData.ensureDatasetExists().catch((err) =>
+    console.warn('dataset ensure failed:', err),
+  );
+} else {
+  appData
+    .datasetExists()
+    .then((exists) => {
+      if (!exists) {
+        console.error(
+          `[storage] the app dataset "${process.env.FUSEKI_DATASET}" does not exist (or could not be listed), ` +
+            'and LINKED_DATASET_ENSURE=0 leaves creating it to the host. Reads will fail until it is provisioned.',
+        );
+      }
+    })
+    .catch((err) => console.warn('dataset check failed:', err));
+}
 
 // Shape → alias. Single alias → default for every shape. For multi-alias
 // add per-shape pins, e.g.:
