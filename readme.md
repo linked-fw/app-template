@@ -74,20 +74,25 @@ Defaults shipped:
 
 All of these are referenced as `${VAR:-default}` placeholders in `linked.backend.datasets.json`, so you can either edit the JSON directly or set env vars.
 
-## Shape IRIs (`LINKED_BASE_URI`)
+## Shapes, ontologies and components live in packages
 
-A shape `Foo` declared with this app's `linkedShape` gets the IRI
-`<root>shape/app/Foo` (the package id is the one in `src/package.ts`). The root
-comes from `LINKED_BASE_URI`; unset, it is the framework default
-`https://linked.cm/`, which every app built from this template shares. A host
-that runs apps for several owners should give each owner its own root, for
-example `LINKED_BASE_URI=https://acme.example.org/`, so one app cannot claim
-another's shape IRIs.
+The app is a `linkedApp`, not a linked package: it has no `src/package.ts` and
+registers no shapes, ontologies or linked components of its own. Put them in
+packages inside this repo, which the app depends on through an npm workspace:
 
-The server reads the variable when it starts, and the client bundle inlines it
-when it is built (`vite.config.ts`), so **build and run with the same value**: a
-shape with a different IRI in the browser than on the server is a different
-shape.
+- `packages/<name>-ont` — one ontology, nothing else;
+- `packages/<name>-assets` — shapes, linked components and backend providers.
+
+`npx linked create-package <name> --location packages` scaffolds a package there
+and wires it into the app.
+
+Each package declares its own IRI root (`baseUri`) in its `src/package.ts`, so
+its shape IRIs are `<root>shape/<name>-assets/<Shape>` and its ontology terms
+`<root>ont/<name>/<Term>`. A package created here takes that root from
+`--base-uri`, otherwise from `LINKED_BASE_URI` (the shell, then `.env.local`,
+then `.env`, which `npm start` / `npm run build` copy from `.env.example`). With
+none set it falls back to the shared `https://linked.cm/`. The app does not read
+`LINKED_BASE_URI` at run time.
 
 ## Raw SPARQL
 
