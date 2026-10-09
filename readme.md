@@ -44,6 +44,11 @@ The home page demonstrates the `@_linked` query DSL with a small Person CRUD —
 
 > No lockfile is committed: the template tracks the published `@_linked/*` packages by caret range, and `npm install` resolves and writes your app's own `package-lock.json` on first install. Commit that lockfile in your app.
 
+Two `package.json` fields keep that install quiet:
+
+- **`allowScripts`** records npm 12's install-script decisions. The four dependencies with install scripts (`esbuild`, `unrs-resolver`, `fsevents`, `@parcel/watcher`) are denied by name: each only rebuilds or re-downloads a native binary that npm already installs as a prebuilt optional dependency. If you add a dependency whose install script is needed, approve it with `npm install-scripts approve <pkg>`.
+- **`overrides`** gives `@_linked/schema` and `@_linked/primitives`, which still declare `@_linked/react@^1`, the app's own `@_linked/react` 2. Its API is unchanged from 1.x, and the browser bundle already dedupes to one copy; the override makes the server load the same one. Drop it once both packages accept `^2`.
+
 ## Storage
 
 This app talks to an Apache Jena Fuseki SPARQL endpoint. Start a local Fuseki container:

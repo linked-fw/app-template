@@ -20,11 +20,17 @@ const stores = await loadStores(config);
 // Auto-create the dataset on first boot — unless the host provisions it
 // (LINKED_DATASET_ENSURE=0, see src/utils/datasetEnsure.ts). Then only check,
 // and say so loudly when it is missing rather than create an empty one.
+//
+// The ensure is awaited: the server writes its shape descriptions to this
+// store right after loading this file, and a write to a dataset that does
+// not exist yet fails (FusekiStore throws FusekiQueryError: 405).
 const appData = stores.appData as FusekiStore;
 if (shouldEnsureDataset(process.env.LINKED_DATASET_ENSURE)) {
-  appData.ensureDatasetExists().catch((err) =>
-    console.warn('dataset ensure failed:', err),
-  );
+  try {
+    await appData.ensureDatasetExists();
+  } catch (err) {
+    console.warn('dataset ensure failed:', err);
+  }
 } else {
   appData
     .datasetExists()

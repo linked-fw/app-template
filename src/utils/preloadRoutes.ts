@@ -25,7 +25,8 @@ export async function preloadMatchedRoute() {
   // Preload each route
   const preloadPromises = routesToPreload
     .map((routeKey) => {
-      const preloadableRoute = PRELOADABLE_ROUTES[routeKey];
+      const preloadableRoute =
+        PRELOADABLE_ROUTES[routeKey as keyof typeof PRELOADABLE_ROUTES];
       if (preloadableRoute && preloadableRoute.preload) {
         return preloadableRoute.preload();
       }

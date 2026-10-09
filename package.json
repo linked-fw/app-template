@@ -14,7 +14,6 @@
   "engines": {
     "node": "^22.22.2 || ^24.15.0"
   },
-  "main": "scripts/start-server.js",
   "exports": {
     "./backend": {
       "development": "./src/backend.ts",
@@ -49,9 +48,11 @@
     "web3"
   ],
   "dependencies": {
-    "@_linked/core": "^2.12",
-    "@_linked/fuseki": "^2.0",
-    "@_linked/react": "^1.4",
+    "@_linked/core": "^2.27.0",
+    "@_linked/css": "^0.3.1",
+    "@_linked/fuseki": "^3.4.1",
+    "@_linked/primitives": "^1.7.1",
+    "@_linked/react": "^2.0.0",
     "@_linked/schema": "^1.4.0",
     "@_linked/server": "^2.22.0",
     "@_linked/server-utils": "^1.10.0",
@@ -73,14 +74,21 @@
     "eslint-plugin-prettier": "^5.0.0",
     "eslint-plugin-react": "latest",
     "eslint-plugin-react-hooks": "latest",
-    "nodemon": "^2.0.22",
     "pm2": "^5.3.0",
-    "typescript-plugin-css-modules": "^5.1.0",
-    "which": "^3.0.1"
+    "typescript-plugin-css-modules": "^5.1.0"
+  },
+  "overrides": {
+    "@_linked/react": "$@_linked/react"
   },
   "packageManager": "npm@12.2.0",
   "repository": {
     "type": "git",
     "url": "git@github.com:linked-fw/app-template.git"
+  },
+  "allowScripts": {
+    "esbuild": false,
+    "unrs-resolver": false,
+    "fsevents": false,
+    "@parcel/watcher": false
   }
 }
