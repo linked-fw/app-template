@@ -36,7 +36,7 @@
     "prettier:fix": "npm run prettier -- --write",
     "format": "npm run prettier:fix && npm run lint:fix",
     "test": "node --experimental-strip-types --no-warnings=ExperimentalWarning --test \"test/*.test.ts\"",
-    "postinstall": "linked localize --relink",
+    "postinstall": "node scripts/ensure-env.cjs && linked localize --relink",
     "dependencies": "linked localize --relink"
   },
   "keywords": [

@@ -88,11 +88,9 @@ and wires it into the app.
 
 Each package declares its own IRI root (`baseUri`) in its `src/package.ts`, so
 its shape IRIs are `<root>shape/<name>-assets/<Shape>` and its ontology terms
-`<root>ont/<name>/<Term>`. A package created here takes that root from
-`--base-uri`, otherwise from `LINKED_BASE_URI` (the shell, then `.env.local`,
-then `.env`, which `npm start` / `npm run build` copy from `.env.example`). With
-none set it falls back to the shared `https://linked.cm/`. The app does not read
-`LINKED_BASE_URI` at run time.
+`<root>ont/<name>/<Term>`; by default that root is `https://linked.cm/`. Set
+`LINKED_BASE_URI` in `.env`, or pass `--base-uri`, to give packages created in
+this app a different IRI root.
 
 ## Raw SPARQL
 
