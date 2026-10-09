@@ -61,7 +61,7 @@
     "react-router-dom": "^6.3.0"
   },
   "devDependencies": {
-    "@_linked/cli": "^1.28",
+    "@_linked/cli": "^1.44.1",
     "@types/node": "^20.12.7",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
