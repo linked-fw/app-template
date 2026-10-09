@@ -81,5 +81,11 @@
   "repository": {
     "type": "git",
     "url": "git@github.com:linked-fw/app-template.git"
+  },
+  "allowScripts": {
+    "esbuild": false,
+    "unrs-resolver": false,
+    "fsevents": false,
+    "@parcel/watcher": false
   }
 }
