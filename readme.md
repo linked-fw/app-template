@@ -1,6 +1,6 @@
-# ${name}
+# Linked App
 
-A standalone [Linked](https://linked.cm) app generated with `@_linked/cli`. Requires **Node ≥ 20.6**.
+A standalone [Linked](https://linked.cm) app generated with `@_linked/cli`. Requires **Node 22.22.2+ or 24.15+** (the range npm 12 supports).
 
 ## What is Linked
 
@@ -28,8 +28,8 @@ const PersonCard = linkedComponent(
 
 The home page in this app demonstrates the full chain end-to-end with `@_linked/schema`'s shipped `Person` shape.
 
-- **[@_linked/core](https://github.com/linked-cm/core)** — query DSL, Shape classes, storage routing.
-- **[@_linked/react](https://github.com/Semantu/linked-react)** — `linkedComponent`, `linkedSetComponent`.
+- **[@_linked/core](https://github.com/linked-fw/core)** — query DSL, Shape classes, storage routing.
+- **[@_linked/react](https://github.com/linked-fw/react)** — `linkedComponent`, `linkedSetComponent`.
 
 ## Install + run
 
@@ -68,7 +68,7 @@ dataset is reported instead of silently re-created empty. Unset means on.
 Defaults shipped:
 
 - `FUSEKI_BASE_URL` — `http://localhost:3030`
-- `FUSEKI_DATASET`  — `${hyphen_name}-main`
+- `FUSEKI_DATASET`  — `app-main` (in `.env.example`; set it per app)
 - `FUSEKI_USER` / `FUSEKI_PASSWORD` — `admin` / `admin` (matches the `stain/jena-fuseki` Docker image default)
 - `FUSEKI_DB_TYPE`  — `tdb2` (persistent). Set to `mem` for in-memory.
 
@@ -83,14 +83,24 @@ packages inside this repo, which the app depends on through an npm workspace:
 - `packages/<name>-ont` — one ontology, nothing else;
 - `packages/<name>-assets` — shapes, linked components and backend providers.
 
-`npx linked create-package <name> --location packages` scaffolds a package there
-and wires it into the app.
+Scaffold them with the CLI, from the app root:
 
-Each package declares its own IRI root (`baseUri`) in its `src/package.ts`, so
-its shape IRIs are `<root>shape/<name>-assets/<Shape>` and its ontology terms
-`<root>ont/<name>/<Term>`; by default that root is `https://linked.cm/`. Set
-`LINKED_BASE_URI` in `.env`, or pass `--base-uri`, to give packages created in
-this app a different IRI root.
+```bash
+npx linked create-ont-package <name> --location packages    # packages/<name>-ont
+npx linked create-asset-package <name> --location packages  # packages/<name>-assets
+npx linked create-package <name> --kind both --location packages
+```
+
+Each wires the package into the app (adding `packages/*` to `workspaces` if it
+is missing). `--kind both` creates the pair, with the asset package depending on
+the ontology package. `create-package` without `--kind` asks which kind on a
+terminal; without a terminal it exits 1 and names the flag.
+
+A package's shape IRIs are `<root>shape/<name>-assets/<Shape>` and its ontology
+terms `<root>ont/<name>/<Term>`. By default that root is `https://linked.cm/` and
+the package declares none. To give packages created in this app a different
+root, pass `--base-uri <uri>` or set `LINKED_BASE_URI` (in the shell, `.env.local`
+or `.env`); the package then records it as `baseUri` in its `src/package.ts`.
 
 ## Raw SPARQL
 
@@ -100,7 +110,7 @@ decides who may run one: `'session'` (the default) allows any signed-in
 session, `'off'` refuses every raw query. Set it in `linked.config.js`
 (`server: { rawQueries: 'off' }`) or with `LINKED_RAW_QUERIES`.
 
-Run the tests with `npm test` (Node 22.6 or later).
+Run the tests with `npm test`.
 
 ## Build for production
 

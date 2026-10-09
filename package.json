@@ -12,7 +12,7 @@
     "email": ""
   },
   "engines": {
-    "node": ">=20.12.0"
+    "node": "^22.22.2 || ^24.15.0"
   },
   "main": "scripts/start-server.js",
   "exports": {
@@ -61,8 +61,8 @@
     "react-router-dom": "^6.3.0"
   },
   "devDependencies": {
-    "@_linked/cli": "^1.44.1",
-    "@types/node": "^20.12.7",
+    "@_linked/cli": "^1.45.3",
+    "@types/node": "^22.0.0",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@typescript-eslint/eslint-plugin": "latest",
@@ -81,6 +81,6 @@
   "packageManager": "npm@12.2.0",
   "repository": {
     "type": "git",
-    "url": "git@github.com:linked-cm/app-template.git"
+    "url": "git@github.com:linked-fw/app-template.git"
   }
 }

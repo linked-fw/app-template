@@ -5,8 +5,8 @@
  * Override --color-primary-* / --color-secondary-* to your own brand.
  *
  * Available tokens (palette, surfaces, shadows, radii, spacing) are documented in:
- *   https://github.com/linked-cm/css/blob/main/README.md
- *   https://github.com/linked-cm/css/blob/main/docs/styling-and-themes.md
+ *   https://github.com/linked-fw/css/blob/main/README.md
+ *   https://github.com/linked-fw/css/blob/main/docs/styling-and-themes.md
  */
 
 /* Tailwind v4 layers — split-import pattern to substitute the Linked preflight.
