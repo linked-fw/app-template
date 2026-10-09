@@ -1,7 +1,6 @@
 node_modules
 build
 lib
-mrgit.json
 public/bundles
 data/uploads
 data/metadata
@@ -10,8 +9,6 @@ linked.backend.datasets.json
 packages/**/dist
 packages/**/lib
 .idea
-android/app/build
-ios/App/App/public
 # Local env (copied from .env.example)
 .env
 # Local package checkouts (linked localize)
