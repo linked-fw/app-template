@@ -14,3 +14,6 @@ android/app/build
 ios/App/App/public
 # Local env (copied from .env.example)
 .env
+# Local package checkouts (linked localize)
+packages-local/
+local-packages.json
