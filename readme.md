@@ -33,7 +33,7 @@ The home page in this app demonstrates the full chain end-to-end with `@_linked/
 
 ## Install + run
 
-This app installs with **npm** (`packageManager: npm@11.19.1`):
+This app installs with **npm** (`packageManager: npm@12.2.0`):
 
 ```bash
 npm install
