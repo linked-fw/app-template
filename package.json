@@ -35,7 +35,9 @@
     "prettier": "prettier \"src/**/*.{js,jsx,ts,tsx,css,scss}\" --check",
     "prettier:fix": "npm run prettier -- --write",
     "format": "npm run prettier:fix && npm run lint:fix",
-    "test": "node --experimental-strip-types --no-warnings=ExperimentalWarning --test \"test/*.test.ts\""
+    "test": "node --experimental-strip-types --no-warnings=ExperimentalWarning --test \"test/*.test.ts\"",
+    "postinstall": "linked localize --relink",
+    "dependencies": "linked localize --relink"
   },
   "keywords": [
     "linked",
