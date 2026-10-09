@@ -42,7 +42,7 @@ npm start
 
 The home page demonstrates the `@_linked` query DSL with a small Person CRUD — see `src/components/PersonOverview.tsx` and `src/components/PersonPreview.tsx`.
 
-> No lockfile is committed: the template tracks the published `@_linked/*` packages by caret range, and `npm install` resolves and writes your app's own `package-lock.json` on first install. Commit that lockfile in your app.
+The template commits its `package-lock.json`, so a fresh clone installs the exact versions the template was tested with. Renovate refreshes it weekly (`lockFileMaintenance` in the shared `linked-fw/renovate-config`). Keep committing it in your app. `npm run build` (`linked build-app`) refuses a working tree with uncommitted changes, because the release it builds is named after the commit. An untracked lockfile would make every fresh build fail that check, and the commit would not say which dependencies were built.
 
 Two `package.json` fields keep that install quiet:
 
@@ -106,6 +106,18 @@ terms `<root>ont/<name>/<Term>`. By default that root is `https://linked.cm/` an
 the package declares none. To give packages created in this app a different
 root, pass `--base-uri <uri>` or set `LINKED_BASE_URI` (in the shell, `.env.local`
 or `.env`); the package then records it as `baseUri` in its `src/package.ts`.
+
+## Who may query the example data
+
+The client runs queries through the server's generic query endpoints (`/call/@_linked/server/*Query`). By default a store requires a signed-in session for every write, and for every read once `rpcExposure` is `'enforce'`. This template has no sign-in, so `linked.backend.storage.ts` declares a narrow rule on the app's store with `withAccess` (from `@_linked/server-utils/utils/QueryAccess`; the logic is in `src/utils/exampleAccess.ts`):
+
+| Caller | Reads | Writes |
+|---|---|---|
+| Signed-in session | anything | anything |
+| Anonymous, query touches only `Person` (and its super shape `Thing`) | allowed | only when `NODE_ENV=development` |
+| Anonymous, query touches any other shape | 401 | 401 |
+
+So the home page form works under `npm start` (`.env.example` sets `NODE_ENV=development`). The compiled build (`npm run build`, `npm run serve-app`) runs with `NODE_ENV=production`: it still lists people, but adding, editing or deleting one answers `401 Authentication required` until the app has sign-in. A rule belongs to a store, not a shape: a query it admits can address any node in that store's dataset by id, through the example shapes. That is acceptable for example data in development, and it is why anonymous writes stay out of production. Remove the rule together with the example.
 
 ## Raw SPARQL
 
