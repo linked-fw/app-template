@@ -1,6 +1,7 @@
 // Bootstrap local (gitignored) config files from their committed `.example`
-// counterparts on first run. Wired to the `prestart` / `prebuild` npm hooks so
-// a fresh clone boots with no manual copy step.
+// counterparts. Wired to the `postinstall` / `prestart` / `prebuild` npm hooks
+// so `.env` exists straight after `npm install` and a fresh clone boots with no
+// manual copy step.
 //
 // Each pair is copied only when the target is missing (no-op otherwise — e.g.
 // the CLI already wrote it on create, or the developer has customised it).
