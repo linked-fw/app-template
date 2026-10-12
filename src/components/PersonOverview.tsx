@@ -9,6 +9,7 @@ import { linkedSetComponent } from '@_linked/react';
 import { Person } from '@_linked/schema/shapes/Person';
 import { PersonPreview } from './PersonPreview';
 import { PersonListRefreshProvider } from './PersonOverviewContext';
+import { useHydrated } from '../hooks/useHydrated';
 import style from './PersonOverview.module.css';
 
 const PersonList = linkedSetComponent(
@@ -42,6 +43,9 @@ function PersonAddForm({ onAdded }: { onAdded: () => void }) {
   const [given, setGiven] = useState('');
   const [family, setFamily] = useState('');
   const [busy, setBusy] = useState(false);
+  // The form is server-rendered; until React hydrates it, a click on Add
+  // would be a native submit that reloads the page and drops the input.
+  const hydrated = useHydrated();
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -69,7 +73,7 @@ function PersonAddForm({ onAdded }: { onAdded: () => void }) {
         placeholder="Last name"
         onChange={(e) => setFamily(e.target.value)}
       />
-      <button type="submit" disabled={busy}>
+      <button type="submit" disabled={!hydrated || busy}>
         Add
       </button>
     </form>
