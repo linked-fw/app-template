@@ -2,7 +2,7 @@
 // the active @_linked/css theme. Tweak tokens in src/theme.css to re-skin
 // everything on this page. (To make the route sign-in-protected later, see
 // the `requireAuth` line in src/routes.tsx.)
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { DefaultLayout } from '../layout/DefaultLayout';
 import { Button } from '@_linked/primitives/components/Button';
 import { Input } from '@_linked/primitives/components/Input';
@@ -15,6 +15,7 @@ import { Tabs } from '@_linked/primitives/components/Tabs';
 import { RadioGroup } from '@_linked/primitives/components/RadioGroup';
 import { Label } from '@_linked/primitives/components/Label';
 import { Separator } from '@_linked/primitives/components/Separator';
+import { useHydrated } from '../hooks/useHydrated';
 import style from './Page1.module.css';
 
 export default function Page1() {
@@ -27,8 +28,7 @@ export default function Page1() {
   // Radix Tabs use React 18 useId() which can drift between SSR (StaticRouter)
   // and CSR (BrowserRouter) trees and trigger an aria-controls hydration
   // mismatch warning. Render the showcase only after mount to side-step this.
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+  const mounted = useHydrated();
 
   return (
     <DefaultLayout>
