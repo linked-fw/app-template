@@ -35,9 +35,12 @@
     "prettier:fix": "npm run prettier -- --write",
     "format": "npm run prettier:fix && npm run lint:fix",
     "test": "node --experimental-strip-types --no-warnings=ExperimentalWarning --test \"test/*.test.ts\"",
-    "postinstall": "node scripts/ensure-env.cjs && linked localize --relink",
-    "dependencies": "linked localize --relink"
+    "postinstall": "node scripts/ensure-env.cjs && node -e \"const p='node_modules/@_linked/cli/hooks/lock-at-rest.cjs';require('fs').existsSync(p)&&require(require('path').resolve(p))\"",
+    "dependencies": "node -e \"const p='node_modules/@_linked/cli/hooks/lock-at-rest.cjs';require('fs').existsSync(p)&&require(require('path').resolve(p))\""
   },
+  "workspaces": [
+    "packages-local/*"
+  ],
   "keywords": [
     "linked",
     "linked code",
@@ -62,7 +65,7 @@
     "react-router-dom": "^6.3.0"
   },
   "devDependencies": {
-    "@_linked/cli": "^1.45.3",
+    "@_linked/cli": "^1.47.0",
     "@types/node": "^22.0.0",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",

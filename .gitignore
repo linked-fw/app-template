@@ -11,6 +11,7 @@ packages/**/lib
 .idea
 # Local env (copied from .env.example)
 .env
-# Local package checkouts (linked localize)
+# Local package checkouts (linked localize): workspace members through the
+# "packages-local/*" glob; parked ones sit outside it.
 packages-local/
-local-packages.json
+.packages-local.parked/
