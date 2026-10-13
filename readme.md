@@ -154,6 +154,21 @@ pm2 start pm2.config.js          # production  → npm run server:prod
 pm2 start pm2-staging.config.js  # staging     → npm run server:staging
 ```
 
+## Working on a framework package locally
+
+The app is already set up for `linked localize`: `packages-local/*` is a workspace glob and
+the install hooks keep the committed `package-lock.json` unchanged. With nothing localized
+none of this does anything.
+
+```bash
+npx linked localize @_linked/react   # clone into packages-local/, link, build
+npx linked localize --list           # checkouts and drift
+npx linked delocalize                # park them; the app uses npm again
+```
+
+Use `npm install`, not `npm ci`, while checkouts are present. Details:
+[docs/localize.md](https://github.com/linked-fw/cli/blob/main/docs/localize.md).
+
 ## Learn more
 
 - [@_linked/core](https://www.npmjs.com/package/@_linked/core) — query DSL, Shape classes, storage routing. See `parseDatasetsConfig` + `loadStores` for the dataset-config helpers.
