@@ -1,5 +1,5 @@
 {
-  "_note": "Backend datasets config. Copy this file to linked.backend.datasets.json (gitignored) and replace placeholders with literal values, OR set the env vars referenced via ${VAR}. The ${VAR:-default} form falls back to the literal after :- when the env var is unset. Each entry has two keys: `store` (an npm import path string identifying the IDataset class) and `config` (a single JSON object passed verbatim to `new StoreClass(config)` — its fields are whatever that class's constructor expects).",
+  "_note": "Backend datasets config. Copy this file to linked.backend.datasets.json (gitignored) and replace placeholders with literal values, OR set the env vars referenced via ${VAR}. The ${VAR:-default} form falls back to the literal after :- when the env var is unset. Each entry has two keys: `store` (an npm import path string identifying the IDataset class) and `config` (a single JSON object passed verbatim to `new StoreClass(config)` — its fields are whatever that class's constructor expects). linked.backend.storage.ts instantiates exactly one alias: `gateway` when CN_EG_GATEWAY is set (a host started the app and injected it with CN_APP_SERVICE_SECRET), else `appData` (npm start by hand, direct Fuseki on FUSEKI_DATASET); a host that owns the `gateway` entry rewrites it at every start.",
 
   "datasets": {
     "appData": {
@@ -11,6 +11,13 @@
           "username": "${FUSEKI_USER:-admin}",
           "password": "${FUSEKI_PASSWORD:-admin}"
         }
+      }
+    },
+    "gateway": {
+      "store": "@_linked/server/shapes/quadstores/GatewayStore",
+      "config": {
+        "endpoint":   "${CN_EG_GATEWAY:-}",
+        "credential": "${CN_APP_SERVICE_SECRET:-}"
       }
     }
   }
