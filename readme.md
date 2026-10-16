@@ -42,7 +42,7 @@ npm start
 
 The home page demonstrates the `@_linked` query DSL with a small Person CRUD — see `src/components/PersonOverview.tsx` and `src/components/PersonPreview.tsx`.
 
-The template commits its `package-lock.json`, so a fresh clone installs the exact versions the template was tested with. Renovate refreshes it weekly (`lockFileMaintenance` in the shared `linked-fw/renovate-config`). Keep committing it in your app. `npm run build` (`linked build-app`) refuses a working tree with uncommitted changes, because the release it builds is named after the commit. An untracked lockfile would make every fresh build fail that check, and the commit would not say which dependencies were built.
+The template commits its `package-lock.json`, so a fresh clone installs the exact versions the template was tested with. Renovate keeps it current: `renovate.json` extends the shared `linked-fw/renovate-config`, which moves every `@_linked/*` dependency in one weekly PR and refreshes the lockfile within its ranges (`lockFileMaintenance`), each automerged once the PR check passes. Keep committing it in your app. `npm run build` (`linked build-app`) refuses a working tree with uncommitted changes, because the release it builds is named after the commit. An untracked lockfile would make every fresh build fail that check, and the commit would not say which dependencies were built.
 
 `allowScripts` in `package.json` keeps that install quiet. It records npm 12's install-script decisions. The four dependencies with install scripts (`esbuild`, `unrs-resolver`, `fsevents`, `@parcel/watcher`) are denied by name: each only rebuilds or re-downloads a native binary that npm already installs as a prebuilt optional dependency. If you add a dependency whose install script is needed, approve it with `npm install-scripts approve <pkg>`.
 
@@ -125,6 +125,17 @@ session, `'off'` refuses every raw query. Set it in `linked.config.js`
 (`server: { rawQueries: 'off' }`) or with `LINKED_RAW_QUERIES`.
 
 Run the tests with `npm test`.
+
+`npm run test:e2e` is a browser smoke test of the People example (Playwright,
+`e2e/`). It starts `npm start` against Fuseki at `FUSEKI_BASE_URL` (default
+`http://localhost:3030`, admin/admin) on ports 4517 and 4518 (`E2E_PORT` moves
+them), each on a throwaway dataset it drops afterwards, and adds, edits and
+deletes a person twice: in this app as it is, and in a scratch copy laid out the
+way Create Now generates a project, with an ontology and an asset package in
+`packages/`. Vite pre-bundles the client differently once an app has source
+workspaces, which is where a shape class could be renamed (`Person` →
+`Person3`) and every Person query refused. Install Chromium once with
+`npx playwright install chromium`. The template's PR check runs both suites.
 
 ## Build for production
 
