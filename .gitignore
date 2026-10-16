@@ -15,3 +15,5 @@ packages/**/lib
 # "packages-local/*" glob; parked ones sit outside it.
 packages-local/
 .packages-local.parked/
+test-results
+playwright-report

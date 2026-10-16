@@ -1,0 +1,91 @@
+# PR check for the app template: install from the committed lockfile, run the
+# unit tests, build, and run the People smoke test against a real Fuseki.
+#
+# Not the shared linked-fw/.github pr.yml: that one runs `linked build`, which
+# refuses an app ("is a linkedApp, not a linkedPackage"). The job is still named
+# `Build & Test`, the check name the other linked-fw repos require, so it is
+# what Renovate's automerge of the `linked framework` group and of
+# lockFileMaintenance waits on.
+#
+# Apps generated from this template inherit the file; the job only runs in the
+# template's own repository.
+name: PR
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    name: Build & Test
+    if: github.repository == 'linked-fw/app-template'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      # The image @_linked/core's Fuseki tests use.
+      fuseki:
+        image: secoresearch/fuseki:6.2.0
+        env:
+          ADMIN_PASSWORD: admin
+          ENABLE_UPDATE: 'true'
+          ENABLE_DATA_WRITE: 'true'
+        ports:
+          - 3030:3030
+        options: >-
+          --health-cmd "wget -qO- http://localhost:3030/ >/dev/null 2>&1 || exit 1"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
+    env:
+      FUSEKI_BASE_URL: http://localhost:3030
+      FUSEKI_USER: admin
+      FUSEKI_PASSWORD: admin
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: '24.21.0'
+
+      # setup-node does not install the npm that `packageManager` names.
+      - name: Use the npm named in packageManager
+        run: |
+          set -euo pipefail
+          want=$(node -p "require('./package.json').packageManager.replace(/^npm@/, '').split('+')[0]")
+          [ "$(npm --version)" = "$want" ] || npm install --global --no-audit --no-fund "npm@$want"
+          echo "npm $(npm --version)"
+
+      # Installs exactly what a generated app installs: the committed lockfile.
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Linked versions installed
+        run: npm ls --depth=0 | grep '@_linked/'
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Smoke test (People screen, template and generated-project layouts)
+        run: npm run test:e2e
+        env:
+          CI: 'true'
+
+      - name: Upload Playwright traces
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-test-results
+          path: test-results/
+          retention-days: 7
