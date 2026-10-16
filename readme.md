@@ -54,7 +54,7 @@ This app talks to an Apache Jena Fuseki SPARQL endpoint. Start a local Fuseki co
 docker run -d --rm -p 3030:3030 --name fuseki stain/jena-fuseki
 ```
 
-The app auto-creates its dataset on first boot. A host that provisions the
+In direct mode (see below) the app auto-creates its dataset on first boot. A host that provisions the
 dataset itself sets `LINKED_DATASET_ENSURE=0` (Create Now does): the app then
 only checks that the dataset exists and logs an error if it does not, so a lost
 dataset is reported instead of silently re-created empty. Unset means on.
@@ -75,6 +75,30 @@ Defaults shipped:
 - `FUSEKI_DB_TYPE`  — `tdb2` (persistent). Set to `mem` for in-memory.
 
 All of these are referenced as `${VAR:-default}` placeholders in `linked.backend.datasets.json`, so you can either edit the JSON directly or set env vars.
+
+### Two storage modes: direct and gateway
+
+`linked.backend.storage.ts` instantiates exactly one alias from
+`linked.backend.datasets.json`, chosen by whether `CN_EG_GATEWAY` is in the
+process environment (`src/utils/storageMode.ts`):
+
+| Mode | When | Alias | Store |
+|---|---|---|---|
+| direct | `npm start` by hand (`CN_EG_GATEWAY` unset) | `appData` | `FusekiStore` on the `.env` dataset (`FUSEKI_DATASET`) |
+| gateway | started by a host such as Create Now | `gateway` | `GatewayStore` (`@_linked/server`): every query goes to `CN_EG_GATEWAY`, authenticated with `CN_APP_SERVICE_SECRET` |
+
+The host injects `CN_EG_GATEWAY` (the gateway's base URL, e.g.
+`http://localhost:4040/gateway`) and `CN_APP_SERVICE_SECRET` (a per-start
+credential) into the environment at spawn and never writes them to `.env`, so a
+clone started by hand is always in direct mode. In gateway mode the gateway
+decides which dataset the queries run on; the app does not talk to Fuseki and
+`FUSEKI_*` / `LINKED_DATASET_ENSURE` are not used.
+
+The mode never falls back: a missing alias for the selected mode fails the boot
+with a message naming it, and in gateway mode the boot checks
+`GET $CN_EG_GATEWAY/health` first and exits with `GatewayUnreachableError` when
+the gateway does not answer or refuses the credential, rather than carrying on
+without data.
 
 ## Shapes, ontologies and components live in packages
 

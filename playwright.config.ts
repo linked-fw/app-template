@@ -6,6 +6,9 @@
 // - `project`: the app as Create Now generates it, with an ontology and an asset
 //   package in packages/ (see e2e/project-app.mjs), built in a scratch directory.
 //
+// A third project, `gateway-boot`, boots the app once more with a dead gateway
+// endpoint and checks it stops (e2e/gateway-boot.spec.ts); no browser.
+//
 // Run with `npm run test:e2e`. Needs Fuseki at FUSEKI_BASE_URL (default
 // http://localhost:3030, admin/admin) and Chromium (`npx playwright install
 // chromium`). Each layout uses its own throwaway dataset, created on boot
@@ -57,8 +60,17 @@ export default defineConfig({
     trace: 'retain-on-failure',
   },
   projects: [
-    { name: 'template', use: { baseURL: templateOrigin } },
-    { name: 'project', use: { baseURL: projectOrigin } },
+    {
+      name: 'template',
+      testMatch: 'people.spec.ts',
+      use: { baseURL: templateOrigin },
+    },
+    {
+      name: 'project',
+      testMatch: 'people.spec.ts',
+      use: { baseURL: projectOrigin },
+    },
+    { name: 'gateway-boot', testMatch: 'gateway-boot.spec.ts' },
   ],
   webServer: [
     {
