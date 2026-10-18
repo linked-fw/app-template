@@ -11,7 +11,7 @@ import datasetsConfig from './linked.frontend.datasets.json' with { type: 'json'
 import { parseDatasetsConfig } from '@_linked/core/utils/parseDatasetsConfig';
 import { LinkedFileStorage } from '@_linked/core/utils/LinkedFileStorage';
 import { LinkedStorage } from '@_linked/core/utils/LinkedStorage';
-import { BackendAPIStore } from '@_linked/server/shapes/quadstores/BackendAPIStore';
+import { RemoteDataset } from '@_linked/server/shapes/quadstores/RemoteDataset';
 import { getAccessUrlLocalFileStore } from '@_linked/server/utils/accessUrl';
 // Direct-to-Fuseki on the frontend? Uncomment:
 // import { FusekiStore } from '@_linked/fuseki/shapes/FusekiStore';
@@ -25,7 +25,9 @@ const config = parseDatasetsConfig(datasetsConfig, {});
 
 // One store per alias. Each line imports the class above and constructs it
 // with the alias's `config`. Adding a new alias = add an import + a line.
-const appData = new BackendAPIStore(config.datasets.appData.config);
+// No `url`: the browser talks to this app's own backend. Never put a token in
+// a frontend file, it ships in the bundle.
+const appData = new RemoteDataset(config.datasets.appData.config);
 // Direct-to-Fuseki alternative (no creds in browser):
 // const appData = new FusekiStore(config.datasets.appData.config);
 
