@@ -5,7 +5,6 @@ public/bundles
 data/uploads
 data/metadata
 data/sessions
-linked.backend.datasets.json
 packages/**/dist
 packages/**/lib
 .idea
