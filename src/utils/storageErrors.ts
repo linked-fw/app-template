@@ -6,29 +6,9 @@
  * `FusekiStore` never shows them.
  */
 import {
-  RemoteDatasetError,
   RemoteDatasetUnauthorizedError,
   RemoteDatasetUnreachableError,
 } from '@_linked/server/shapes/quadstores/RemoteDataset';
-
-/**
- * Whether `err` is a `cls`. By class first; then by the class name the error
- * sets on itself (`name`), because under `linked start` (dev) the store comes
- * from a second copy of the same module: Vite bundles `@_linked/server` for
- * the SSR runner, which loads this file, while `loadStores` imports the store
- * through Node. A built app has one copy and matches by class.
- */
-function isError<T extends RemoteDatasetError>(
-  err: unknown,
-  cls: abstract new (...args: never[]) => T,
-): err is T {
-  return (
-    err instanceof cls ||
-    (err instanceof Error &&
-      err.name === cls.name &&
-      typeof (err as { url?: unknown }).url === 'string')
-  );
-}
 
 const DIRECT_MODE = [
   '  "store": "@_linked/fuseki/shapes/FusekiStore",',
@@ -41,7 +21,7 @@ const DIRECT_MODE = [
  * error the boot reports (the caller rethrows those as they are).
  */
 export function dataServerMessage(err: unknown): string | undefined {
-  if (isError(err, RemoteDatasetUnreachableError)) {
+  if (err instanceof RemoteDatasetUnreachableError) {
     return [
       err.url
         ? `Could not reach the data server at ${err.url}`
@@ -51,7 +31,7 @@ export function dataServerMessage(err: unknown): string | undefined {
       ...DIRECT_MODE,
     ].join('\n');
   }
-  if (isError(err, RemoteDatasetUnauthorizedError)) {
+  if (err instanceof RemoteDatasetUnauthorizedError) {
     return [
       `The data server at ${err.url} refused this app's token`,
       '(DATA_SERVER_TOKEN in .env, used by linked.backend.storage.ts → datasets.appData).',
