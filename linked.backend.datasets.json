@@ -1,0 +1,17 @@
+{
+  "_note": "Backend datasets config, committed. Each entry under `datasets` is an alias: `store` is the npm import path of the IDataset class, and `config` is a single JSON object passed verbatim to `new StoreClass(config)`, so its keys are whatever that class's constructor takes. ${VAR} placeholders resolve from the environment (.env or the shell); ${VAR:-default} falls back to the literal after :- when VAR is unset. `appData` is the store every shape uses (linked.backend.storage.ts). By default it is FusekiStore on FUSEKI_BASE_URL/FUSEKI_DATASET: `endpoint` is the dataset's URL, `credentials` the Fuseki login. A host may point `appData` at a data server instead: \"store\": \"@_linked/server/shapes/quadstores/RemoteDataset\" with \"config\": { \"url\": \"${DATA_SERVER_URL:-}\", \"token\": \"${DATA_SERVER_TOKEN:-}\" }, where `url` is the data server's base URL and `token` the bearer token it issued to this app.",
+
+  "datasets": {
+    "appData": {
+      "store": "@_linked/fuseki/shapes/FusekiStore",
+      "config": {
+        "endpoint": "${FUSEKI_BASE_URL:-http://localhost:3030}/${FUSEKI_DATASET:-app-main}",
+        "credentials": {
+          "type": "basic",
+          "username": "${FUSEKI_USER:-admin}",
+          "password": "${FUSEKI_PASSWORD:-admin}"
+        }
+      }
+    }
+  }
+}

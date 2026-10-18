@@ -1,90 +1,87 @@
 // Backend storage config.
 //
-// Reads linked.backend.datasets.json, picks the alias for the mode this
-// process runs in (see src/utils/storageMode.ts), dynamically imports that
+// Reads linked.backend.datasets.json, dynamically imports the `appData`
 // alias's store class via its npm path, and instantiates it with the entry's
 // `config` verbatim. See the mirror at src/linked.frontend.storage.ts.
 //
-// Two modes, never a fallback between them:
-// - gateway: CN_EG_GATEWAY is set (a host started this app and injected it,
-//   with CN_APP_SERVICE_SECRET). Every query goes to the host's gateway; the
-//   boot fails when the gateway does not answer.
-// - direct:  `npm start` by hand. FusekiStore on the `.env` dataset.
+// Whatever store `appData` names is used; there is no mode switch here:
+// - FusekiStore (the committed default): the app talks to Fuseki on the `.env`
+//   dataset, and creates that dataset on first boot.
+// - RemoteDataset with a `url` (what a host such as Create Now sets): every
+//   query goes to the data server at DATA_SERVER_URL with DATA_SERVER_TOKEN,
+//   and the boot stops with a message when it does not answer or refuses the
+//   token (src/utils/storageErrors.ts).
 import datasetsConfig from './linked.backend.datasets.json' with { type: 'json' };
 import { parseDatasetsConfig } from '@_linked/core/utils/parseDatasetsConfig';
 import { loadStores } from '@_linked/core/utils/loadStores';
 import { LinkedStorage } from '@_linked/core/utils/LinkedStorage';
 import { LinkedFileStorage } from '@_linked/core/utils/LinkedFileStorage';
 import type { IDataset } from '@_linked/core/interfaces/IDataset';
-import type { FusekiStore } from '@_linked/fuseki/shapes/FusekiStore';
-import type { GatewayStore } from '@_linked/server/shapes/quadstores/GatewayStore';
 import { LocalFileStore } from '@_linked/server/shapes/filestores/LocalFileStore';
 import { withAccess } from '@_linked/server-utils/utils/QueryAccess';
 import { getSuperShapesClasses } from '@_linked/core/utils/ShapeClass';
 import { Person } from '@_linked/schema/shapes/Person';
 import { shouldEnsureDataset } from './src/utils/datasetEnsure';
-import { GATEWAY_ALIAS, selectStorageAlias } from './src/utils/storageMode';
+import { dataServerMessage } from './src/utils/storageErrors';
 import { allowsAnonymousExampleWrites, exampleAccess } from './src/utils/exampleAccess';
 
-// Resolve ${VAR} placeholders against the runtime environment. Both aliases
-// resolve (their placeholders all carry a default), but only the selected one
-// is instantiated: the other mode's config is empty or points nowhere.
+// Resolve ${VAR} placeholders against the runtime environment.
 const config = parseDatasetsConfig(datasetsConfig, process.env);
-const alias = selectStorageAlias(process.env, config);
-const stores = await loadStores({ datasets: { [alias]: config.datasets[alias] } });
-const appData = stores[alias] as IDataset;
+const stores = await loadStores(config);
+const appData = stores.appData as IDataset & {
+  url?: string;
+  ensureDatasetExists?: () => Promise<unknown>;
+  datasetExists?: () => Promise<boolean>;
+};
 
-if (alias === GATEWAY_ALIAS) {
-  // Gateway mode: check the gateway answers for this credential before the
-  // server writes its shape descriptions through it. setDefaultDataset calls
-  // init() without awaiting it, so a boot that must fail loudly awaits it
-  // here: an unreachable gateway or a refused credential throws
-  // GatewayUnreachableError and the process stops.
-  const gateway = appData as GatewayStore;
-  let health;
+// setDefaultDataset calls init() without awaiting it, so a boot that must fail
+// loudly awaits it here first (init() is memoized once it succeeds). A
+// RemoteDataset with a url pings its data server here; when nothing answers or
+// the token is refused, the boot stops with the message, not a stack trace.
+if (appData.init) {
   try {
-    health = await gateway.init();
+    await appData.init();
   } catch (err) {
-    console.error(
-      `[storage] CN_EG_GATEWAY is set, so this app was started by a host and stores its data through ` +
-        `${gateway.endpoint}, but the gateway did not answer. The app does not fall back to Fuseki; ` +
-        'it stops here. Start the host, or unset CN_EG_GATEWAY to run on the .env dataset.',
-    );
-    throw err;
+    const message = dataServerMessage(err);
+    if (!message) throw err;
+    console.error(message);
+    process.exit(1);
   }
-  console.log(
-    `[storage] gateway mode: ${gateway.endpoint} ` +
-      `(project ${health.projectId}, branch ${health.branchName}, dataset ${health.dataset})`,
-  );
-} else {
-  // Direct mode: auto-create the dataset on first boot — unless the host
-  // provisions it (LINKED_DATASET_ENSURE=0, see src/utils/datasetEnsure.ts).
-  // Then only check, and say so loudly when it is missing rather than create
-  // an empty one.
-  //
-  // The ensure is awaited: the server writes its shape descriptions to this
-  // store right after loading this file, and a write to a dataset that does
-  // not exist yet fails (FusekiStore throws FusekiQueryError: 405).
-  const fuseki = appData as FusekiStore;
-  if (shouldEnsureDataset(process.env.LINKED_DATASET_ENSURE)) {
+}
+// The store's own url when it has one (a RemoteDataset with a url).
+console.log(
+  `[storage] appData: ${appData.constructor.name}` +
+    (typeof appData.url === 'string' && appData.url ? ` at ${appData.url}` : ''),
+);
+
+// A store that manages its own dataset (FusekiStore) gets it created on first
+// boot, unless the host provisions it (LINKED_DATASET_ENSURE=0, see
+// src/utils/datasetEnsure.ts). Then only check, and say so loudly when it is
+// missing rather than create an empty one.
+//
+// The ensure is awaited: the server writes its shape descriptions to this
+// store right after loading this file, and a write to a dataset that does
+// not exist yet fails (FusekiStore throws FusekiQueryError: 405).
+if (shouldEnsureDataset(process.env.LINKED_DATASET_ENSURE)) {
+  if (appData.ensureDatasetExists) {
     try {
-      await fuseki.ensureDatasetExists();
+      await appData.ensureDatasetExists();
     } catch (err) {
       console.warn('dataset ensure failed:', err);
     }
-  } else {
-    fuseki
-      .datasetExists()
-      .then((exists) => {
-        if (!exists) {
-          console.error(
-            `[storage] the app dataset "${process.env.FUSEKI_DATASET}" does not exist (or could not be listed), ` +
-              'and LINKED_DATASET_ENSURE=0 leaves creating it to the host. Reads will fail until it is provisioned.',
-          );
-        }
-      })
-      .catch((err) => console.warn('dataset check failed:', err));
   }
+} else if (appData.datasetExists) {
+  appData
+    .datasetExists()
+    .then((exists) => {
+      if (!exists) {
+        console.error(
+          `[storage] the app dataset "${process.env.FUSEKI_DATASET}" does not exist (or could not be listed), ` +
+            'and LINKED_DATASET_ENSURE=0 leaves creating it to the host. Reads will fail until it is provisioned.',
+        );
+      }
+    })
+    .catch((err) => console.warn('dataset check failed:', err));
 }
 
 // Who may query this store from the client (see src/utils/exampleAccess.ts).

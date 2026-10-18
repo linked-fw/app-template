@@ -63,7 +63,7 @@ dataset is reported instead of silently re-created empty. Unset means on.
 
 | File | Purpose |
 |---|---|
-| `linked.backend.datasets.json` | Backend Layer 2 — alias → store class + config. Gitignored. Copy of `linked.backend.datasets.example.json`. |
+| `linked.backend.datasets.json` | Backend Layer 2 — alias → store class + config. Committed; `appData` is `FusekiStore` by default. |
 | `linked.backend.storage.ts` | Backend Layer 1 — shape → alias routing. Parses the JSON, instantiates stores via `loadStores`, calls `LinkedStorage.setDefaultDataset(...)` / `setDatasetForShapes(...)`. |
 | `src/linked.frontend.{storage.ts,datasets.json}` | Frontend mirror — same JSON shape, public values only; storage TS imports store classes explicitly and constructs one per alias. |
 
@@ -76,29 +76,39 @@ Defaults shipped:
 
 All of these are referenced as `${VAR:-default}` placeholders in `linked.backend.datasets.json`, so you can either edit the JSON directly or set env vars.
 
-### Two storage modes: direct and gateway
+### Fuseki or a data server
 
-`linked.backend.storage.ts` instantiates exactly one alias from
-`linked.backend.datasets.json`, chosen by whether `CN_EG_GATEWAY` is in the
-process environment (`src/utils/storageMode.ts`):
+`linked.backend.storage.ts` loads the `appData` alias of
+`linked.backend.datasets.json`, whatever store it names, and routes every shape
+to it. There is no mode switch in code: the store in that file decides.
 
-| Mode | When | Alias | Store |
-|---|---|---|---|
-| direct | `npm start` by hand (`CN_EG_GATEWAY` unset) | `appData` | `FusekiStore` on the `.env` dataset (`FUSEKI_DATASET`) |
-| gateway | started by a host such as Create Now | `gateway` | `GatewayStore` (`@_linked/server`): every query goes to `CN_EG_GATEWAY`, authenticated with `CN_APP_SERVICE_SECRET` |
+| `appData` store | Data goes to | Config |
+|---|---|---|
+| `@_linked/fuseki/shapes/FusekiStore` (committed default) | Fuseki, on the `.env` dataset (`FUSEKI_DATASET`), created on first boot | `endpoint`, `credentials` from `FUSEKI_*` |
+| `@_linked/server/shapes/quadstores/RemoteDataset` with a `url` | a data server, such as Create Now, which decides the dataset from the token | `url` from `DATA_SERVER_URL`, `token` from `DATA_SERVER_TOKEN` |
 
-The host injects `CN_EG_GATEWAY` (the gateway's base URL, e.g.
-`http://localhost:4040/gateway`) and `CN_APP_SERVICE_SECRET` (a per-start
-credential) into the environment at spawn and never writes them to `.env`, so a
-clone started by hand is always in direct mode. In gateway mode the gateway
-decides which dataset the queries run on; the app does not talk to Fuseki and
-`FUSEKI_*` / `LINKED_DATASET_ENSURE` are not used.
+An app whose data lives behind a data server sets the entry to:
 
-The mode never falls back: a missing alias for the selected mode fails the boot
-with a message naming it, and in gateway mode the boot checks
-`GET $CN_EG_GATEWAY/health` first and exits with `GatewayUnreachableError` when
-the gateway does not answer or refuses the credential, rather than carrying on
-without data.
+```json
+"appData": {
+  "store": "@_linked/server/shapes/quadstores/RemoteDataset",
+  "config": { "url": "${DATA_SERVER_URL:-}", "token": "${DATA_SERVER_TOKEN:-}" }
+}
+```
+
+and puts `DATA_SERVER_URL` / `DATA_SERVER_TOKEN` in `.env`. The boot pings the
+data server first and stops (exit 1) with a message rather than carrying on
+without data:
+
+- nothing answers at the url, or `DATA_SERVER_URL` is empty: `Could not reach
+  the data server at <url>` (or `No data server is set: DATA_SERVER_URL is
+  empty in .env`);
+- the server refuses the token: `The data server at <url> refused this app's
+  token`.
+
+Both messages show the `FusekiStore` entry to switch back to direct mode. With
+a store that manages its own dataset (`FusekiStore`), the boot creates it when
+absent, unless `LINKED_DATASET_ENSURE=0`.
 
 ## Shapes, ontologies and components live in packages
 

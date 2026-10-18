@@ -6,8 +6,10 @@
 // - `project`: the app as Create Now generates it, with an ontology and an asset
 //   package in packages/ (see e2e/project-app.mjs), built in a scratch directory.
 //
-// A third project, `gateway-boot`, boots the app once more with a dead gateway
-// endpoint and checks it stops (e2e/gateway-boot.spec.ts); no browser.
+// A third project, `data-server-boot`, boots a scratch copy whose `appData` is a
+// RemoteDataset against a dead url, a stub data server and an empty url, and
+// checks it boots or stops with the right message (e2e/data-server-boot.spec.ts);
+// no browser.
 //
 // Run with `npm run test:e2e`. Needs Fuseki at FUSEKI_BASE_URL (default
 // http://localhost:3030, admin/admin) and Chromium (`npx playwright install
@@ -70,7 +72,7 @@ export default defineConfig({
       testMatch: 'people.spec.ts',
       use: { baseURL: projectOrigin },
     },
-    { name: 'gateway-boot', testMatch: 'gateway-boot.spec.ts' },
+    { name: 'data-server-boot', testMatch: 'data-server-boot.spec.ts' },
   ],
   webServer: [
     {
