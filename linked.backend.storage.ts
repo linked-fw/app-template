@@ -17,6 +17,7 @@ import { loadStores } from '@_linked/core/utils/loadStores';
 import { LinkedStorage } from '@_linked/core/utils/LinkedStorage';
 import { LinkedFileStorage } from '@_linked/core/utils/LinkedFileStorage';
 import type { IDataset } from '@_linked/core/interfaces/IDataset';
+import { RemoteDataset } from '@_linked/server/shapes/quadstores/RemoteDataset';
 import { LocalFileStore } from '@_linked/server/shapes/filestores/LocalFileStore';
 import { shouldEnsureDataset } from './src/utils/datasetEnsure';
 import { dataServerMessage } from './src/utils/storageErrors';
@@ -25,7 +26,6 @@ import { dataServerMessage } from './src/utils/storageErrors';
 const config = parseDatasetsConfig(datasetsConfig, process.env);
 const stores = await loadStores(config);
 const appData = stores.appData as IDataset & {
-  url?: string;
   ensureDatasetExists?: () => Promise<unknown>;
   datasetExists?: () => Promise<boolean>;
 };
@@ -44,10 +44,10 @@ if (appData.init) {
     process.exit(1);
   }
 }
-// The store's own url when it has one (a RemoteDataset with a url).
+// A RemoteDataset with a url names its data server.
 console.log(
   `[storage] appData: ${appData.constructor.name}` +
-    (typeof appData.url === 'string' && appData.url ? ` at ${appData.url}` : ''),
+    (appData instanceof RemoteDataset && appData.url ? ` at ${appData.url}` : ''),
 );
 
 // A store that manages its own dataset (FusekiStore) gets it created on first

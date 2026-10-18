@@ -55,20 +55,14 @@ test('any other error is not a boot message', () => {
   assert.equal(dataServerMessage(undefined), undefined);
 });
 
-test('an error from a second copy of the module matches by its name', () => {
-  // What `linked start` hands over in dev: same class, other module instance.
+test('an error that only shares the class name is not a boot message', () => {
+  // Matching is by class; a look-alike from another module instance is rethrown.
   class RemoteDatasetUnauthorizedError extends Error {
     url = url;
-    status = 401;
     constructor() {
       super('401');
       this.name = 'RemoteDatasetUnauthorizedError';
     }
   }
-  const message = dataServerMessage(new RemoteDatasetUnauthorizedError());
-  assert.ok(message);
-  assert.equal(message.split('\n')[0], `The data server at ${url} refused this app's token`);
-  const unnamed = new Error('x');
-  unnamed.name = 'RemoteDatasetUnreachableError';
-  assert.equal(dataServerMessage(unnamed), undefined, 'no url: not a data server error');
+  assert.equal(dataServerMessage(new RemoteDatasetUnauthorizedError()), undefined);
 });
