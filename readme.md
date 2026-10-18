@@ -1,6 +1,6 @@
 # Linked App
 
-A standalone [Linked](https://linked.cm) app generated with `@_linked/cli`. Requires **Node 22.22.2+ or 24.15+** (the range npm 12 supports).
+A standalone [Linked](https://linked.cm) app generated with `@_linked/cli`. This is the **blank** variant: no example shapes or screens, one home page that renders the app's name (`APP_NAME`). Requires **Node 22.22.2+ or 24.15+** (the range npm 12 supports).
 
 ## What is Linked
 
@@ -26,7 +26,7 @@ const PersonCard = linkedComponent(
 );
 ```
 
-The home page in this app demonstrates the full chain end-to-end with `@_linked/schema`'s shipped `Person` shape.
+The `main` branch of [linked-fw/app-template](https://github.com/linked-fw/app-template) demonstrates the full chain end-to-end with `@_linked/schema`'s shipped `Person` shape.
 
 - **[@_linked/core](https://github.com/linked-fw/core)** — query DSL, Shape classes, storage routing.
 - **[@_linked/react](https://github.com/linked-fw/react)** — `linkedComponent`, `linkedSetComponent`.
@@ -40,7 +40,7 @@ npm install
 npm start
 ```
 
-The home page demonstrates the `@_linked` query DSL with a small Person CRUD — see `src/components/PersonOverview.tsx` and `src/components/PersonPreview.tsx`.
+The home page (`src/pages/Home.tsx`) renders `APP_NAME` from `.env`. A host that starts the app, such as Create Now, sets it to the project's name.
 
 The template commits its `package-lock.json`, so a fresh clone installs the exact versions the template was tested with. Renovate keeps it current: `renovate.json` extends the shared `linked-fw/renovate-config`, which moves every `@_linked/*` dependency in one weekly PR and refreshes the lockfile within its ranges (`lockFileMaintenance`), each automerged once the PR check passes. Keep committing it in your app. `npm run build` (`linked build-app`) refuses a working tree with uncommitted changes, because the release it builds is named after the commit. An untracked lockfile would make every fresh build fail that check, and the commit would not say which dependencies were built.
 
@@ -128,17 +128,9 @@ the package declares none. To give packages created in this app a different
 root, pass `--base-uri <uri>` or set `LINKED_BASE_URI` (in the shell, `.env.local`
 or `.env`); the package then records it as `baseUri` in its `src/package.ts`.
 
-## Who may query the example data
+## Who may query the data
 
-The client runs queries through the server's generic query endpoints (`/call/@_linked/server/*Query`). By default a store requires a signed-in session for every write, and for every read once `rpcExposure` is `'enforce'`. This template has no sign-in, so `linked.backend.storage.ts` declares a narrow rule on the app's store with `withAccess` (from `@_linked/server-utils/utils/QueryAccess`; the logic is in `src/utils/exampleAccess.ts`):
-
-| Caller | Reads | Writes |
-|---|---|---|
-| Signed-in session | anything | anything |
-| Anonymous, query touches only `Person` (and its super shape `Thing`) | allowed | only when `NODE_ENV=development` |
-| Anonymous, query touches any other shape | 401 | 401 |
-
-So the home page form works under `npm start` (`.env.example` sets `NODE_ENV=development`). The compiled build (`npm run build`, `npm run serve-app`) runs with `NODE_ENV=production`: it still lists people, but adding, editing or deleting one answers `401 Authentication required` until the app has sign-in. A rule belongs to a store, not a shape: a query it admits can address any node in that store's dataset by id, through the example shapes. That is acceptable for example data in development, and it is why anonymous writes stay out of production. Remove the rule together with the example.
+The client runs queries through the server's generic query endpoints (`/call/@_linked/server/*Query`). This app attaches no rule of its own, so the server's default applies: a signed-in session for every write, and for every read once `rpcExposure` is `'enforce'`. To open part of the store to anonymous callers, attach a rule to the store in `linked.backend.storage.ts` with `withAccess` (from `@_linked/server-utils/utils/QueryAccess`).
 
 ## Raw SPARQL
 
@@ -150,15 +142,14 @@ session, `'off'` refuses every raw query. Set it in `linked.config.js`
 
 Run the tests with `npm test`.
 
-`npm run test:e2e` is a browser smoke test of the People example (Playwright,
+`npm run test:e2e` is a browser smoke test of the home page (Playwright,
 `e2e/`). It starts `npm start` against Fuseki at `FUSEKI_BASE_URL` (default
 `http://localhost:3030`, admin/admin) on ports 4517 and 4518 (`E2E_PORT` moves
-them), each on a throwaway dataset it drops afterwards, and adds, edits and
-deletes a person twice: in this app as it is, and in a scratch copy laid out the
-way Create Now generates a project, with an ontology and an asset package in
-`packages/`. Vite pre-bundles the client differently once an app has source
-workspaces, which is where a shape class could be renamed (`Person` →
-`Person3`) and every Person query refused. Install Chromium once with
+them), each on a throwaway dataset it drops afterwards, with a generated
+`APP_NAME`, and checks the home page renders that name twice: in this app as it
+is, and in a scratch copy laid out the way Create Now generates a project, with
+an ontology and an asset package in `packages/`. Vite pre-bundles the client
+differently once an app has source workspaces. Install Chromium once with
 `npx playwright install chromium`. The template's PR check runs both suites.
 
 ## Build for production

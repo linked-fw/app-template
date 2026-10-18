@@ -19,12 +19,8 @@ import type { IDataset } from '@_linked/core/interfaces/IDataset';
 import type { FusekiStore } from '@_linked/fuseki/shapes/FusekiStore';
 import type { GatewayStore } from '@_linked/server/shapes/quadstores/GatewayStore';
 import { LocalFileStore } from '@_linked/server/shapes/filestores/LocalFileStore';
-import { withAccess } from '@_linked/server-utils/utils/QueryAccess';
-import { getSuperShapesClasses } from '@_linked/core/utils/ShapeClass';
-import { Person } from '@_linked/schema/shapes/Person';
 import { shouldEnsureDataset } from './src/utils/datasetEnsure';
 import { GATEWAY_ALIAS, selectStorageAlias } from './src/utils/storageMode';
-import { allowsAnonymousExampleWrites, exampleAccess } from './src/utils/exampleAccess';
 
 // Resolve ${VAR} placeholders against the runtime environment. Both aliases
 // resolve (their placeholders all carry a default), but only the selected one
@@ -87,25 +83,14 @@ if (alias === GATEWAY_ALIAS) {
   }
 }
 
-// Who may query this store from the client (see src/utils/exampleAccess.ts).
-// Without a rule every write, and once rpcExposure is 'enforce' every read,
-// needs a signed-in session, which this template has no way to create. This
-// rule opens exactly the home page example: anonymous reads of Person, and
-// anonymous writes of Person only under NODE_ENV=development. Everything else
-// still needs a session. Remove it with the example.
-const exampleShapes = new Set(
-  [Person, ...getSuperShapesClasses(Person)]
-    .map((shape) => shape.shape?.id)
-    .filter((id): id is string => !!id),
-);
-withAccess(
-  appData,
-  exampleAccess(exampleShapes, allowsAnonymousExampleWrites(process.env.NODE_ENV)),
-);
+// Who may query this store from the client: the server's default rule, a
+// signed-in session for every write (and for every read once rpcExposure is
+// 'enforce'). Attach your own rules with `withAccess` from
+// '@_linked/server-utils/utils/QueryAccess'.
 
 // Shape → alias. Single alias → default for every shape. For multi-alias
 // add per-shape pins, e.g.:
-//   LinkedStorage.setDatasetForShapes(stores.appData, [Person]);
+//   LinkedStorage.setDatasetForShapes(stores.appData, [MyShape]);
 LinkedStorage.setDefaultDataset(appData);
 
 // File storage (binary assets). Separate from RDF dataset routing.
