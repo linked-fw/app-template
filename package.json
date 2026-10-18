@@ -52,7 +52,7 @@
     "web3"
   ],
   "dependencies": {
-    "@_linked/core": "^2.33.0",
+    "@_linked/core": "^2.34.0",
     "@_linked/css": "^0.3.1",
     "@_linked/fuseki": "^3.4.2",
     "@_linked/primitives": "^1.8.2",
@@ -66,7 +66,7 @@
     "react-router-dom": "^6.3.0"
   },
   "devDependencies": {
-    "@_linked/cli": "^1.48.1",
+    "@_linked/cli": "^1.49.0",
     "@playwright/test": "^1.64.1",
     "@types/node": "^22.0.0",
     "@types/react": "^19.3.0",
