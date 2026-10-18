@@ -1,5 +1,8 @@
 # PR check for the app template: install from the committed lockfile, run the
-# unit tests, build, and run the People smoke test against a real Fuseki.
+# unit tests, build, and run the browser smoke test (e2e/) against a real Fuseki.
+#
+# Runs on PRs to main and to blank (the template without the example), on
+# pushes to blank (sync-blank.yml's merges of main among them), and on demand.
 #
 # Not the shared linked-fw/.github pr.yml: that one runs `linked build`, which
 # refuses an app ("is a linkedApp, not a linkedPackage"). The job is still named
@@ -15,6 +18,11 @@ on:
   pull_request:
     branches:
       - main
+      - blank
+  push:
+    branches:
+      - blank
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -77,7 +85,7 @@ jobs:
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
 
-      - name: Smoke test (People screen, template and generated-project layouts)
+      - name: Smoke test (template and generated-project layouts)
         run: npm run test:e2e
         env:
           CI: 'true'

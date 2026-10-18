@@ -204,6 +204,44 @@ npx linked delocalize                # park them; the app uses npm again
 Use `npm install`, not `npm ci`, while checkouts are present. Details:
 [docs/localize.md](https://github.com/linked-fw/cli/blob/main/docs/localize.md).
 
+## The blank variant
+
+The `blank` branch is this template without the People example: no example
+shapes, components or pages, and no example access rule. Its one home page
+renders the app's name (`APP_NAME`). Every piece of tooling is the same as on
+`main`: storage config, scripts, build config, Renovate, the PR check and the
+`packages/` layout. Create Now creates new projects from it, and you can start
+an app from it directly:
+
+```bash
+git clone --branch blank --single-branch https://github.com/linked-fw/app-template.git my-app
+```
+
+`.github/workflows/sync-blank.yml` keeps it current: on every push to `main` it
+merges `main` into `blank` with a merge commit and pushes it (never a force
+push), which starts the PR check on `blank`. The push uses the linked-fw release
+app's token; a merge that changes a file under `.github/workflows/` needs that
+app to hold `workflows: write`.
+
+When the merge conflicts, the job fails, names the conflicted files in its
+summary, and pushes nothing. The expected case is `main` changing a file that
+`blank` deletes (a modify/delete conflict, e.g. a fix to
+`src/components/PersonOverview.tsx`). Resolve it by hand, keeping `blank`'s
+removals:
+
+```bash
+git fetch origin
+git switch blank && git pull --ff-only
+git merge origin/main
+git rm <each file blank deletes>   # modify/delete: keep it deleted
+# a content conflict: keep main's change unless it brings the example back
+git commit
+git push origin blank              # a normal push; the PR check runs on blank
+```
+
+Changes on `main` to files `blank` keeps unchanged, or changes away from the
+lines `blank` edits, merge without a conflict.
+
 ## Learn more
 
 - [@_linked/core](https://www.npmjs.com/package/@_linked/core) — query DSL, Shape classes, storage routing. See `parseDatasetsConfig` + `loadStores` for the dataset-config helpers.
