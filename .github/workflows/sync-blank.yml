@@ -1,0 +1,95 @@
+# Keeps the `blank` branch (the template without the People example) in step
+# with main: on every push to main, merge main into blank with a merge commit
+# by the Actions bot and push it. Never a force push, never a rebase.
+#
+# A conflict fails the job and names the files; nothing is pushed. The usual
+# case is main editing a file that blank deletes (modify/delete). Resolve it by
+# hand as the readme describes ("The blank variant").
+#
+# The push uses the linked-fw release app's token (RELEASE_APP_ID /
+# RELEASE_APP_PRIVATE_KEY, as linked-fw/.github's publish.yml does), not
+# GITHUB_TOKEN: a GITHUB_TOKEN push starts no workflow, and the app's push to
+# blank starts the PR check (pr.yml) there. A merge that changes a file under
+# .github/workflows/ needs the app to hold the `workflows: write` permission;
+# without it GitHub refuses the push and the job fails.
+#
+# Apps generated from this template inherit the file; the job only runs in the
+# template's own repository.
+name: Sync blank
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sync-blank
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    name: Merge main into blank
+    if: github.repository == 'linked-fw/app-template'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Generate GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: ${{ secrets.RELEASE_APP_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+
+      - name: Checkout blank
+        uses: actions/checkout@v7
+        with:
+          ref: blank
+          fetch-depth: 0
+          token: ${{ steps.app-token.outputs.token }}
+
+      - name: Merge main into blank
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git fetch --no-tags origin main
+          main_sha=$(git rev-parse origin/main)
+          if git merge-base --is-ancestor "$main_sha" HEAD; then
+            echo "blank already contains main ($main_sha)."
+            exit 0
+          fi
+          if ! git merge --no-ff --no-edit -m "Merge main (${main_sha:0:7}) into blank" "$main_sha"; then
+            conflicts=$(git diff --name-only --diff-filter=U)
+            {
+              echo "## Merging main into blank conflicts"
+              echo
+              echo "Nothing was pushed. Conflicted files:"
+              echo
+              echo '```'
+              git status --short
+              echo '```'
+              echo
+              echo "Resolve by hand, keeping blank's removals (readme, \"The blank variant\"):"
+              echo
+              echo '```'
+              echo 'git fetch origin && git switch blank && git pull --ff-only'
+              echo 'git merge origin/main'
+              echo '# a file blank deleted and main changed: git rm <file>'
+              echo 'git commit && git push origin blank'
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+            for f in $conflicts; do
+              echo "::error file=$f::merging main into blank conflicts on $f"
+            done
+            git merge --abort
+            exit 1
+          fi
+          git log --oneline -1
+          if ! git push origin HEAD:blank; then
+            echo "::error::pushing the merge to blank was refused. A merge that changes .github/workflows/ needs the release app to hold workflows: write; otherwise blank moved meanwhile (re-run the job)."
+            exit 1
+          fi
