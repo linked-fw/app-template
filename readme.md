@@ -87,6 +87,20 @@ to it. There is no mode switch in code: the store in that file decides.
 | `@_linked/fuseki/shapes/FusekiStore` (committed default) | Fuseki, on the `.env` dataset (`FUSEKI_DATASET`), created on first boot | `endpoint`, `credentials` from `FUSEKI_*` |
 | `@_linked/server/shapes/quadstores/RemoteDataset` with a `url` | a data server, such as Create Now, which decides the dataset from the token | `url` from `DATA_SERVER_URL`, `token` from `DATA_SERVER_TOKEN` |
 
+Every boot logs one line naming the store and the dataset it reads and writes
+(`src/utils/storageLog.ts`), so you see where your data goes and when a branch
+has forked its own:
+
+```
+[storage] appData: FusekiStore at http://localhost:3030 → dataset acme-shop-change-1-data
+[storage] appData: RemoteDataset at http://localhost:4040/gateway → dataset acme-shop-data (branch change-1, still on main's data)
+[storage] appData: RemoteDataset at http://localhost:4040/gateway → dataset acme-shop-change-1-data (branch change-1, forked)
+```
+
+A `RemoteDataset` names the dataset only when the data server's `ping` says
+which one it serves (Create Now's gateway does); against a server that answers
+the generic `{ok: true}`, the line is `[storage] appData: RemoteDataset at <url>`.
+
 An app whose data lives behind a data server sets the entry to:
 
 ```json
