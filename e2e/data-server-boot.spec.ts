@@ -3,62 +3,31 @@
 // with a message when the data server cannot be used. Every boot logs one
 // `[storage] appData: …` line naming the store and the dataset it uses.
 //
-// No browser. Each test boots a scratch copy of this repo (its
-// linked.backend.datasets.json switched by e2e/remote-mode.mjs, node_modules
-// linked from the repo; a second copy keeps the committed FusekiStore) and
-// reads its exit code and output. The data server is a small node:http stub,
+// No browser. Each test boots a scratch copy of this repo (node_modules linked
+// from the repo) and reads its exit code and output. Each copy has the `appData`
+// it tests written into its linked.backend.datasets.json (e2e/scratch-app.mjs):
+// a RemoteDataset for the data server cases, a FusekiStore for the last one,
+// whichever of the two the repo commits. The data server is a small node:http stub,
 // so no Create Now is needed.
-import { spawn, spawnSync, type ChildProcess } from 'node:child_process';
-import { cpSync, existsSync, rmSync, symlinkSync } from 'node:fs';
+import { spawn, type ChildProcess } from 'node:child_process';
+import { rmSync } from 'node:fs';
 import { createServer, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { tmpdir } from 'node:os';
-import { dirname, join, relative, resolve, sep } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { join } from 'node:path';
 import { expect, test } from '@playwright/test';
+import { copyRepo, setAppData } from './scratch-app.mjs';
 
-const repo = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const port = Number(process.env.E2E_PORT || 4517) + 2;
 const origin = `http://localhost:${port}`;
 const scratch = join(tmpdir(), `app-template-e2e-remote-${port}`);
 const fusekiScratch = join(tmpdir(), `app-template-e2e-fuseki-${port}`);
 
-const skip = new Set([
-  'node_modules',
-  '.git',
-  '.env',
-  'packages-local',
-  '.packages-local.parked',
-  'test-results',
-  'playwright-report',
-  'build',
-  'lib',
-  'data',
-]);
-
-function copyRepo(dir: string) {
-  if (existsSync(dir)) rmSync(dir, { recursive: true, force: true });
-  cpSync(repo, dir, {
-    recursive: true,
-    filter: (src) => {
-      const rel = relative(repo, src);
-      return rel === '' || !skip.has(rel.split(sep)[0]);
-    },
-  });
-  symlinkSync(join(repo, 'node_modules'), join(dir, 'node_modules'), 'dir');
-}
-
 test.beforeAll(() => {
-  copyRepo(scratch);
-  copyRepo(fusekiScratch);
-  const res = spawnSync(
-    'node',
-    [join(repo, 'e2e', 'remote-mode.mjs'), scratch],
-    {
-      encoding: 'utf8',
-    },
-  );
-  expect(res.status, res.stderr).toBe(0);
+  copyRepo(scratch, { linkNodeModules: true });
+  setAppData(scratch, 'remote');
+  copyRepo(fusekiScratch, { linkNodeModules: true });
+  setAppData(fusekiScratch, 'fuseki');
 });
 
 test.afterAll(() => {

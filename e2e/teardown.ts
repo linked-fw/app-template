@@ -1,9 +1,10 @@
 // Drops the throwaway datasets the smoke run created. Only names this run
 // generated are dropped; a dataset passed in through E2E_DATASET is left alone.
 //
-// The scratch project is not removed here: global teardown runs while the dev
-// servers are still up, and deleting its node_modules under a running Vite
-// fails the run. e2e/project-app.mjs replaces it at the start of the next run.
+// The scratch copies the web servers run in are not removed here: global
+// teardown runs while the dev servers are still up, and deleting files under a
+// running Vite fails the run. e2e/scratch-app.mjs and e2e/project-app.mjs
+// replace them at the start of the next run.
 export default async function teardown() {
   const name = process.env.E2E_DATASET;
   if (!name || process.env.E2E_DATASET_GENERATED !== '1') return;

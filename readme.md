@@ -177,6 +177,12 @@ an ontology and an asset package in `packages/`. Vite pre-bundles the client
 differently once an app has source workspaces. Install Chromium once with
 `npx playwright install chromium`. The template's PR check runs both suites.
 
+The e2e runs every app it boots from a scratch copy and writes the `appData` it
+tests into that copy's `linked.backend.datasets.json`: a FusekiStore for both
+layouts, a RemoteDataset on a stub data server for the data server cases. It
+passes whatever the file commits, including in an app Create Now generates
+(where `appData` is Create Now's gateway), and never needs a data server.
+
 ## Build for production
 
 Production runs the **compiled** app — `linked serve-app` — which never starts
