@@ -11,14 +11,15 @@
 //   query goes to the data server at DATA_SERVER_URL with DATA_SERVER_TOKEN,
 //   and the boot stops with a message when it does not answer or refuses the
 //   token (src/utils/storageErrors.ts).
+// File storage (binary assets) is in its own file, so `linked build-app` can
+// load it without the datasets this file builds.
+import './linked.backend.files';
 import datasetsConfig from './linked.backend.datasets.json' with { type: 'json' };
 import { parseDatasetsConfig } from '@_linked/core/utils/parseDatasetsConfig';
 import { loadStores } from '@_linked/core/utils/loadStores';
 import { LinkedStorage } from '@_linked/core/utils/LinkedStorage';
-import { LinkedFileStorage } from '@_linked/core/utils/LinkedFileStorage';
 import type { IDataset } from '@_linked/core/interfaces/IDataset';
 import { RemoteDataset } from '@_linked/server/shapes/quadstores/RemoteDataset';
-import { LocalFileStore } from '@_linked/server/shapes/filestores/LocalFileStore';
 import { shouldEnsureDataset } from './src/utils/datasetEnsure';
 import { dataServerMessage } from './src/utils/storageErrors';
 
@@ -89,9 +90,3 @@ if (shouldEnsureDataset(process.env.LINKED_DATASET_ENSURE)) {
 // add per-shape pins, e.g.:
 //   LinkedStorage.setDatasetForShapes(stores.appData, [MyShape]);
 LinkedStorage.setDefaultDataset(appData);
-
-// File storage (binary assets). Separate from RDF dataset routing.
-const fileStore = new LocalFileStore(
-  (process.env.NODE_ENV || 'development') + '-files',
-);
-LinkedFileStorage.setDefaultDataset(fileStore);
