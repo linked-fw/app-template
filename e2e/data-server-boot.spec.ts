@@ -1,11 +1,13 @@
 // An app whose `appData` is a RemoteDataset (as a host such as Create Now
 // writes it) boots against DATA_SERVER_URL with DATA_SERVER_TOKEN, and stops
-// with a message when the data server cannot be used.
+// with a message when the data server cannot be used. Every boot logs one
+// `[storage] appData: …` line naming the store and the dataset it uses.
 //
 // No browser. Each test boots a scratch copy of this repo (its
 // linked.backend.datasets.json switched by e2e/remote-mode.mjs, node_modules
-// linked from the repo) and reads its exit code and output. The data server
-// is a small node:http stub, so no Create Now is needed.
+// linked from the repo; a second copy keeps the committed FusekiStore) and
+// reads its exit code and output. The data server is a small node:http stub,
+// so no Create Now is needed.
 import { spawn, spawnSync, type ChildProcess } from 'node:child_process';
 import { cpSync, existsSync, rmSync, symlinkSync } from 'node:fs';
 import { createServer, type Server } from 'node:http';
@@ -19,6 +21,7 @@ const repo = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const port = Number(process.env.E2E_PORT || 4517) + 2;
 const origin = `http://localhost:${port}`;
 const scratch = join(tmpdir(), `app-template-e2e-remote-${port}`);
+const fusekiScratch = join(tmpdir(), `app-template-e2e-fuseki-${port}`);
 
 const skip = new Set([
   'node_modules',
@@ -33,28 +36,44 @@ const skip = new Set([
   'data',
 ]);
 
-test.beforeAll(() => {
-  if (existsSync(scratch)) rmSync(scratch, { recursive: true, force: true });
-  cpSync(repo, scratch, {
+function copyRepo(dir: string) {
+  if (existsSync(dir)) rmSync(dir, { recursive: true, force: true });
+  cpSync(repo, dir, {
     recursive: true,
     filter: (src) => {
       const rel = relative(repo, src);
       return rel === '' || !skip.has(rel.split(sep)[0]);
     },
   });
-  symlinkSync(join(repo, 'node_modules'), join(scratch, 'node_modules'), 'dir');
-  const res = spawnSync('node', [join(repo, 'e2e', 'remote-mode.mjs'), scratch], {
-    encoding: 'utf8',
-  });
+  symlinkSync(join(repo, 'node_modules'), join(dir, 'node_modules'), 'dir');
+}
+
+test.beforeAll(() => {
+  copyRepo(scratch);
+  copyRepo(fusekiScratch);
+  const res = spawnSync(
+    'node',
+    [join(repo, 'e2e', 'remote-mode.mjs'), scratch],
+    {
+      encoding: 'utf8',
+    },
+  );
   expect(res.status, res.stderr).toBe(0);
 });
 
 test.afterAll(() => {
   rmSync(scratch, { recursive: true, force: true });
+  rmSync(fusekiScratch, { recursive: true, force: true });
 });
 
-/** A data server stub: `ping` answers `pingStatus`, queries answer []/null. */
-async function dataServer(pingStatus: 200 | 401): Promise<Server> {
+/**
+ * A data server stub: `ping` answers `pingStatus` with `pingBody` (the generic
+ * `{ok: true}` by default), queries answer []/null.
+ */
+async function dataServer(
+  pingStatus: 200 | 401,
+  pingBody: Record<string, unknown> = { ok: true },
+): Promise<Server> {
   const server = createServer((req, res) => {
     req.resume();
     req.on('end', () => {
@@ -65,9 +84,14 @@ async function dataServer(pingStatus: 200 | 401): Promise<Server> {
         res.end(JSON.stringify({ error: 'not found' }));
       } else if (method === 'ping' && pingStatus === 401) {
         res.statusCode = 401;
-        res.end(JSON.stringify({ error: 'unknown token', code: 'invalid-credential' }));
+        res.end(
+          JSON.stringify({
+            error: 'unknown token',
+            code: 'invalid-credential',
+          }),
+        );
       } else if (method === 'ping') {
-        res.end(JSON.stringify({ ok: true }));
+        res.end(JSON.stringify(pingBody));
       } else {
         res.end(JSON.stringify(method === 'selectQuery' ? [] : null));
       }
@@ -81,7 +105,11 @@ function stubUrl(server: Server) {
   return `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
 }
 
-function start(dataServerUrl: string) {
+function start(
+  dataServerUrl: string,
+  extra: Record<string, string> = {},
+  cwd = scratch,
+) {
   const env: Record<string, string | undefined> = {
     ...process.env,
     NODE_ENV: 'development',
@@ -90,10 +118,11 @@ function start(dataServerUrl: string) {
     DATA_ROOT: `${origin}/data`,
     DATA_SERVER_URL: dataServerUrl,
     DATA_SERVER_TOKEN: 'test-token',
+    ...extra,
   };
   delete env.E2E_DATASET;
   const child = spawn('npm', ['start'], {
-    cwd: scratch,
+    cwd,
     env,
     detached: process.platform !== 'win32',
     shell: process.platform === 'win32',
@@ -106,7 +135,9 @@ function start(dataServerUrl: string) {
 
 function exited(child: ChildProcess) {
   if (child.exitCode !== null) return Promise.resolve(child.exitCode);
-  return new Promise<number | null>((done) => child.on('exit', (code) => done(code)));
+  return new Promise<number | null>((done) =>
+    child.on('exit', (code) => done(code)),
+  );
 }
 
 function stop(child: ChildProcess) {
@@ -116,6 +147,19 @@ function stop(child: ChildProcess) {
     process.kill(-child.pid, 'SIGTERM');
   } catch {
     child.kill('SIGTERM');
+  }
+}
+
+/** The `[storage] appData: …` line of a boot, once it is logged (undefined if the app exits first). */
+async function storageLine(run: ReturnType<typeof start>, timeoutMs = 150_000) {
+  const deadline = Date.now() + timeoutMs;
+  for (;;) {
+    const line = run.output
+      .split('\n')
+      .find((l) => l.includes('[storage] appData: '));
+    if (line) return line.slice(line.indexOf('[storage] appData: ')).trimEnd();
+    if (run.child.exitCode !== null || Date.now() > deadline) return undefined;
+    await new Promise((done) => setTimeout(done, 250));
   }
 }
 
@@ -138,7 +182,9 @@ test('a refused token stops the boot with the token message', async () => {
     const run = start(url);
     const code = await exited(run.child);
     expect(code, run.output).not.toBe(0);
-    expect(run.output).toContain(`The data server at ${url} refused this app's token`);
+    expect(run.output).toContain(
+      `The data server at ${url} refused this app's token`,
+    );
     expect(run.output).toContain('DATA_SERVER_TOKEN in .env');
   } finally {
     server.close();
@@ -153,12 +199,18 @@ test('an answering data server: the app boots and serves /', async () => {
     const deadline = Date.now() + 150_000;
     let status = 0;
     while (Date.now() < deadline && run.child.exitCode === null) {
-      status = await fetch(`${origin}/`).then((r) => r.status, () => 0);
+      status = await fetch(`${origin}/`).then(
+        (r) => r.status,
+        () => 0,
+      );
       if (status === 200) break;
       await new Promise((done) => setTimeout(done, 1000));
     }
     expect(status, run.output).toBe(200);
-    expect(run.output).toContain(`[storage] appData: RemoteDataset at ${url}`);
+    // The generic ping answers {ok: true}: the line names the server only.
+    expect(await storageLine(run), run.output).toBe(
+      `[storage] appData: RemoteDataset at ${url}`,
+    );
   } finally {
     stop(run.child);
     await exited(run.child);
@@ -170,5 +222,71 @@ test('an empty DATA_SERVER_URL says no data server is set', async () => {
   const run = start('');
   const code = await exited(run.child);
   expect(code, run.output).not.toBe(0);
-  expect(run.output).toContain('No data server is set: DATA_SERVER_URL is empty in .env');
+  expect(run.output).toContain(
+    'No data server is set: DATA_SERVER_URL is empty in .env',
+  );
+});
+
+test('a gateway that names the dataset: the line says which, and whether the branch forked', async () => {
+  for (const [ping, expected] of [
+    [
+      {
+        ok: true,
+        projectId: 'p',
+        branchName: 'change-1',
+        dataset: 'acme-shop-data',
+        forked: false,
+      },
+      "→ dataset acme-shop-data (branch change-1, still on main's data)",
+    ],
+    [
+      {
+        ok: true,
+        projectId: 'p',
+        branchName: 'change-1',
+        dataset: 'acme-shop-change-1-data',
+        forked: true,
+      },
+      '→ dataset acme-shop-change-1-data (branch change-1, forked)',
+    ],
+  ] as const) {
+    const server = await dataServer(200, ping);
+    const url = stubUrl(server);
+    const run = start(url);
+    try {
+      expect(await storageLine(run), run.output).toBe(
+        `[storage] appData: RemoteDataset at ${url} ${expected}`,
+      );
+    } finally {
+      stop(run.child);
+      await exited(run.child);
+      server.close();
+    }
+  }
+});
+
+test('FusekiStore: the line names the Fuseki base and the dataset', async () => {
+  const base = (process.env.FUSEKI_BASE_URL || 'http://localhost:3030').replace(
+    /\/+$/,
+    '',
+  );
+  // LINKED_DATASET_ENSURE=0: this boot only logs, it creates no dataset; it is
+  // stopped once the line is out.
+  const run = start(
+    '',
+    {
+      FUSEKI_BASE_URL: base,
+      FUSEKI_DATASET: 'acme-shop-change-1-data',
+      LINKED_DATASET_ENSURE: '0',
+    },
+    fusekiScratch,
+  );
+  try {
+    expect(await storageLine(run), run.output).toBe(
+      `[storage] appData: FusekiStore at ${base} → dataset acme-shop-change-1-data`,
+    );
+  } finally {
+    stop(run.child);
+    await exited(run.child);
+  }
 });

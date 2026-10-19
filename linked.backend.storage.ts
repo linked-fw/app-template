@@ -25,7 +25,11 @@ import { getSuperShapesClasses } from '@_linked/core/utils/ShapeClass';
 import { Person } from '@_linked/schema/shapes/Person';
 import { shouldEnsureDataset } from './src/utils/datasetEnsure';
 import { dataServerMessage } from './src/utils/storageErrors';
-import { allowsAnonymousExampleWrites, exampleAccess } from './src/utils/exampleAccess';
+import {
+  allowsAnonymousExampleWrites,
+  exampleAccess,
+} from './src/utils/exampleAccess';
+import { appDataLogLine } from './src/utils/storageLog';
 
 // Resolve ${VAR} placeholders against the runtime environment.
 const config = parseDatasetsConfig(datasetsConfig, process.env);
@@ -49,10 +53,18 @@ if (appData.init) {
     process.exit(1);
   }
 }
-// A RemoteDataset with a url names its data server.
+// One line: the store, where it is, and the dataset it reads and writes. A
+// RemoteDataset names the dataset when its data server's ping says which one
+// (Create Now's gateway does, and whether the branch has forked its own); a
+// FusekiStore names it from its endpoint. See src/utils/storageLog.ts.
+const remote = appData instanceof RemoteDataset ? appData : undefined;
 console.log(
-  `[storage] appData: ${appData.constructor.name}` +
-    (appData instanceof RemoteDataset && appData.url ? ` at ${appData.url}` : ''),
+  appDataLogLine({
+    store: appData.constructor.name,
+    url: remote?.url,
+    ping: remote?.info,
+    endpoint: config.datasets.appData?.config?.endpoint,
+  }),
 );
 
 // A store that manages its own dataset (FusekiStore) gets it created on first
@@ -98,7 +110,10 @@ const exampleShapes = new Set(
 );
 withAccess(
   appData,
-  exampleAccess(exampleShapes, allowsAnonymousExampleWrites(process.env.NODE_ENV)),
+  exampleAccess(
+    exampleShapes,
+    allowsAnonymousExampleWrites(process.env.NODE_ENV),
+  ),
 );
 
 // Shape → alias. Single alias → default for every shape. For multi-alias
