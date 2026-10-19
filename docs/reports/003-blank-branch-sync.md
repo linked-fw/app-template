@@ -54,16 +54,14 @@ copy on `blank`.
 
 ## Known limits
 
-- The release app has `contents: write` but not `workflows: write`. GitHub refuses a push that
-  changes `.github/workflows/`, so a sync bringing a workflow change (e.g. a Renovate action
-  bump) fails until the app is granted it; merge those by hand. The job's error message says so.
+- The sync pushes with the release app, which has `workflows: write` (granted 2026-10-19), so a
+  sync that brings a workflow change (e.g. a Renovate action bump) goes through like any other.
 - Conflicts are manual; the sync runs of 2026-10-19 for #34 and #35 failed and were resolved by
   hand, and `blank` contains `main` since.
 
 ## Follow-ups
 
-- Grant the release app `workflows: write` (org settings; recorded in the readme and the
-  workflow's error message).
+- None.
 
 ## PRs
 
