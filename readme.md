@@ -59,12 +59,13 @@ dataset itself sets `LINKED_DATASET_ENSURE=0` (Create Now does): the app then
 only checks that the dataset exists and logs an error if it does not, so a lost
 dataset is reported instead of silently re-created empty. Unset means on.
 
-**Storage config lives in three files**, per the spec in [`@_linked/cli` docs](https://www.npmjs.com/package/@_linked/cli):
+**Storage config lives in four files**, per the spec in [`@_linked/cli` docs](https://www.npmjs.com/package/@_linked/cli):
 
 | File | Purpose |
 |---|---|
 | `linked.backend.datasets.json` | Backend Layer 2 — alias → store class + config. Committed; `appData` is `FusekiStore` by default. |
 | `linked.backend.storage.ts` | Backend Layer 1 — shape → alias routing. Parses the JSON, instantiates stores via `loadStores`, calls `LinkedStorage.setDefaultDataset(...)` / `setDatasetForShapes(...)`. |
+| `linked.backend.files.ts` | Backend file storage (binary assets): registers the file stores on `LinkedFileStorage`. The storage file imports it; `linked build-app` and `linked publish-app` load only this file to find where a release is published, so a build needs no Fuseki or data server. Keep dataset code out of it. |
 | `src/linked.frontend.{storage.ts,datasets.json}` | Frontend mirror — same JSON shape, public values only; storage TS imports store classes explicitly and constructs one per alias. |
 
 Defaults shipped:
