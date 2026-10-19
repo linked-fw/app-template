@@ -2,9 +2,13 @@
 // with its pre-bundled client dependencies) against a real Fuseki and drives the
 // screen in Chromium, in two layouts:
 //
-// - `template`: this repository as it is;
+// - `template`: this repository as it is, in a scratch copy;
 // - `project`: the app as Create Now generates it, with an ontology and an asset
 //   package in packages/ (see e2e/project-app.mjs), built in a scratch directory.
+//
+// Both copies boot with `appData` set to FusekiStore (e2e/scratch-app.mjs),
+// whatever linked.backend.datasets.json commits: an app Create Now generates
+// commits a RemoteDataset on its gateway, and the run must not need one.
 //
 // A third project, `data-server-boot`, boots a scratch copy whose `appData` is a
 // RemoteDataset against a dead url, a stub data server and an empty url, and
@@ -28,8 +32,10 @@ if (!process.env.E2E_DATASET) {
 const dataset = process.env.E2E_DATASET;
 
 const port = Number(process.env.E2E_PORT || 4517);
-// One scratch project per port, replaced on every run (see e2e/teardown.ts). It
-// sits outside this repository so nothing resolves from this node_modules.
+// One scratch copy per layout and port, replaced on every run (see
+// e2e/teardown.ts). The template copy links this node_modules; the project
+// copy sits outside this repository so nothing resolves from it.
+const templateDir = join(tmpdir(), `app-template-e2e-template-${port}`);
 const projectDir = join(tmpdir(), `app-template-e2e-project-${port + 1}`);
 const templateOrigin = `http://localhost:${port}`;
 const projectOrigin = `http://localhost:${port + 1}`;
@@ -77,7 +83,7 @@ export default defineConfig({
   webServer: [
     {
       name: 'template',
-      command: 'npm start',
+      command: `node e2e/scratch-app.mjs "${templateDir}" fuseki && cd "${templateDir}" && npm start`,
       url: `${templateOrigin}/`,
       reuseExistingServer,
       timeout: 180_000,

@@ -8,29 +8,15 @@
 // to rename shape classes. The plain template never takes that path.
 //
 // Usage: node e2e/project-app.mjs <target-dir>
-import { cpSync, existsSync, rmSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
-import { dirname, join, relative, resolve, sep } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { join, resolve } from 'node:path';
+import { copyRepo, repo, setAppData } from './scratch-app.mjs';
 
-const repo = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const target = process.argv[2] && resolve(process.argv[2]);
 if (!target) {
   console.error('usage: node e2e/project-app.mjs <target-dir>');
   process.exit(2);
 }
-
-// Top-level entries that are local state, not part of the repo.
-const skip = new Set([
-  'node_modules',
-  '.git',
-  'packages-local',
-  '.packages-local.parked',
-  'test-results',
-  'playwright-report',
-  'build',
-  'lib',
-]);
 
 function run(cmd, args, cwd) {
   console.log(`[project-app] ${cmd} ${args.join(' ')}`);
@@ -47,14 +33,10 @@ function run(cmd, args, cwd) {
   }
 }
 
-if (existsSync(target)) rmSync(target, { recursive: true, force: true });
-cpSync(repo, target, {
-  recursive: true,
-  filter: (src) => {
-    const rel = relative(repo, src);
-    return rel === '' || !skip.has(rel.split(sep)[0]);
-  },
-});
+copyRepo(target);
+// The project boots on Fuseki whatever the repo commits (a Create Now app
+// commits a RemoteDataset on its gateway), so no data server is needed.
+setAppData(target, 'fuseki');
 
 // The CLI from this repo's install: it is the version the lockfile pins, and
 // the copy has no node_modules yet.
