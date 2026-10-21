@@ -1,7 +1,8 @@
 // Builds the app the way Create Now generates a project from this template, in
 // a scratch directory: a copy of the repo with an ontology and an asset package
 // in packages/ (wired as npm workspace members by `linked create-package`), then
-// `npm install`, which follows the committed lockfile for everything else.
+// `npm install`, which follows the committed lockfile for everything else. The
+// ontology package's Turtle gains one class axiom (e2e/smoke-ontology.mjs).
 //
 // Those source workspaces matter: they switch `createViteConfig` from the
 // standalone setup to the workspace one, which is where Vite's pre-bundler used
@@ -11,6 +12,7 @@
 import { spawnSync } from 'node:child_process';
 import { join, resolve } from 'node:path';
 import { copyRepo, repo, setAppData } from './scratch-app.mjs';
+import { addSmokeAxiom } from './smoke-ontology.mjs';
 
 const target = process.argv[2] && resolve(process.argv[2]);
 if (!target) {
@@ -55,4 +57,6 @@ run(
   ],
   target,
 );
+// A class axiom in the ontology package's Turtle, for e2e/ontology.spec.ts.
+addSmokeAxiom(target);
 run('npm', ['install', '--no-audit', '--no-fund'], target);
