@@ -34,9 +34,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     services:
-      # The image @_linked/core's Fuseki tests use.
+      # The Linked Fuseki image (datasets infer RDFS classes, /<ds>/stored),
+      # which every linked app runs on and e2e/ontology.spec.ts needs.
       fuseki:
-        image: secoresearch/fuseki:6.2.0
+        image: ghcr.io/linked-fw/fuseki:6.2.0-1
         env:
           ADMIN_PASSWORD: admin
           ENABLE_UPDATE: 'true'

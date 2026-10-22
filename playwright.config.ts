@@ -15,6 +15,12 @@
 // checks it boots or stops with the right message (e2e/data-server-boot.spec.ts);
 // no browser.
 //
+// A fourth, `ontology`, checks the `project` app's dataset after boot: the
+// ontology package's class axiom was written there from its Turtle, and the
+// dataset infers from it while `/<dataset>/stored` does not
+// (e2e/ontology.spec.ts); no browser. It needs the Fuseki image whose datasets
+// infer (ghcr.io/linked-fw/fuseki, see the readme).
+//
 // Run with `npm run test:e2e`. Needs Fuseki at FUSEKI_BASE_URL (default
 // http://localhost:3030, admin/admin) and Chromium (`npx playwright install
 // chromium`). Each layout uses its own throwaway dataset, created on boot
@@ -83,6 +89,7 @@ export default defineConfig({
       use: { baseURL: projectOrigin },
     },
     { name: 'data-server-boot', testMatch: 'data-server-boot.spec.ts' },
+    { name: 'ontology', testMatch: 'ontology.spec.ts' },
   ],
   webServer: [
     {

@@ -48,11 +48,20 @@ The template commits its `package-lock.json`, so a fresh clone installs the exac
 
 ## Storage
 
-This app talks to an Apache Jena Fuseki SPARQL endpoint. Start a local Fuseki container:
+This app talks to an Apache Jena Fuseki SPARQL endpoint, run from the Linked Fuseki image
+[`ghcr.io/linked-fw/fuseki`](https://github.com/linked-fw/fuseki) (Fuseki 6.2). Start a local container:
 
 ```bash
-docker run -d --rm -p 3030:3030 --name fuseki stain/jena-fuseki
+docker run -d --rm -p 3030:3030 -e ADMIN_PASSWORD=admin --name fuseki ghcr.io/linked-fw/fuseki:6.2.0-1
 ```
+
+Use this image, not a stock Fuseki: its TDB2 datasets infer RDFS classes. With
+`ex:A rdfs:subClassOf ex:B` stored, every `ex:A` is also an `ex:B` to every query, and
+`@_linked/core`'s queries rely on that (a select of a shape also finds the instances of
+its subclasses). Nothing is materialized; `/<dataset>/stored` reads only the stored
+triples (backups and copies use it). See the
+[`@_linked/fuseki` readme](https://www.npmjs.com/package/@_linked/fuseki) for the
+image's environment, volumes and backups.
 
 In direct mode (see below) the app auto-creates its dataset on first boot. A host that provisions the
 dataset itself sets `LINKED_DATASET_ENSURE=0` (Create Now does): the app then
@@ -72,8 +81,8 @@ Defaults shipped:
 
 - `FUSEKI_BASE_URL` — `http://localhost:3030`
 - `FUSEKI_DATASET`  — `app-main` (in `.env.example`; set it per app)
-- `FUSEKI_USER` / `FUSEKI_PASSWORD` — `admin` / `admin` (matches the `stain/jena-fuseki` Docker image default)
-- `FUSEKI_DB_TYPE`  — `tdb2` (persistent). Set to `mem` for in-memory.
+- `FUSEKI_USER` / `FUSEKI_PASSWORD` — `admin` / `admin` (the `ADMIN_PASSWORD` of the `docker run` above)
+- `FUSEKI_DB_TYPE`  — `tdb2` (persistent, infers classes). `mem` is in-memory and does not infer.
 
 All of these are referenced as `${VAR:-default}` placeholders in `linked.backend.datasets.json`, so you can either edit the JSON directly or set env vars.
 
@@ -147,6 +156,26 @@ is missing). `--kind both` creates the pair, with the asset package depending on
 the ontology package. `create-package` without `--kind` asks which kind on a
 terminal; without a terminal it exits 1 and names the flag.
 
+An ontology package's data is Turtle, `src/data/<name>.ttl` (the whole
+vocabulary: classes, properties, labels). Its `loadData` reads it through
+`loadOntologyFiles` from `@_linked/core/ontology/loadOntologyFiles`, relative to
+the module, and `linked build` copies it to `lib/esm/data/`, so the same path
+holds in `src` and in the build. To make a class a subclass of another, add the
+axiom there:
+
+```turtle
+<https://linked.cm/ont/shop/Book> a rdfs:Class ;
+  rdfs:subClassOf <https://linked.cm/ont/shop/Product> .
+```
+
+At boot, before it syncs its shapes, the app writes the `rdfs:subClassOf`
+triples of every registered package's ontology data into its dataset (the
+ontology sync; a package whose data has not changed is skipped), so the store
+infers from them. It follows `syncShapesOnBoot` in `linked.config.js`;
+`LINKED_SYNC_ONTOLOGIES_ON_BOOT=false` turns it off alone. When both classes
+have shapes, the subclass's shape must extend the superclass's; the boot logs a
+warning for each shape that does not (core's shape check).
+
 A package's shape IRIs are `<root>shape/<name>-assets/<Shape>` and its ontology
 terms `<root>ont/<name>/<Term>`. By default that root is `https://linked.cm/` and
 the package declares none. To give packages created in this app a different
@@ -182,6 +211,12 @@ tests into that copy's `linked.backend.datasets.json`: a FusekiStore for both
 layouts, a RemoteDataset on a stub data server for the data server cases. It
 passes whatever the file commits, including in an app Create Now generates
 (where `appData` is Create Now's gateway), and never needs a data server.
+
+The `ontology` suite checks the generated-project copy's dataset after boot: the
+ontology package's Turtle (to which the e2e adds `Widget rdfs:subClassOf Item`)
+was written there, an instance of `Widget` is an `Item` on the dataset and is not
+on `/<dataset>/stored`. It needs Fuseki from the image above; a stock Fuseki
+fails it.
 
 ## Build for production
 
