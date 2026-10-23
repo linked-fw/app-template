@@ -37,7 +37,7 @@ jobs:
       # The Linked Fuseki image (datasets infer RDFS classes, /<ds>/stored),
       # which every linked app runs on and e2e/ontology.spec.ts needs.
       fuseki:
-        image: ghcr.io/linked-fw/fuseki:6.2.0-1
+        image: ghcr.io/linked-fw/fuseki:6.2.0-2
         env:
           ADMIN_PASSWORD: admin
           ENABLE_UPDATE: 'true'
