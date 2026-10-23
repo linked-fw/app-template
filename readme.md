@@ -52,7 +52,7 @@ This app talks to an Apache Jena Fuseki SPARQL endpoint, run from the Linked Fus
 [`ghcr.io/linked-fw/fuseki`](https://github.com/linked-fw/fuseki) (Fuseki 6.2). Start a local container:
 
 ```bash
-docker run -d --rm -p 3030:3030 -e ADMIN_PASSWORD=admin --name fuseki ghcr.io/linked-fw/fuseki:6.2.0-1
+docker run -d --rm -p 3030:3030 -e ADMIN_PASSWORD=admin --name fuseki ghcr.io/linked-fw/fuseki:6.2.0-2
 ```
 
 Use this image, not a stock Fuseki: its TDB2 datasets infer RDFS classes. With

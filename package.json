@@ -52,14 +52,14 @@
     "web3"
   ],
   "dependencies": {
-    "@_linked/core": "^2.37.2",
+    "@_linked/core": "^2.38.0",
     "@_linked/css": "^0.3.1",
-    "@_linked/fuseki": "^3.6.0",
+    "@_linked/fuseki": "^3.7.0",
     "@_linked/primitives": "^1.9.0",
     "@_linked/react": "^2.0.2",
     "@_linked/schema": "^1.6.0",
-    "@_linked/server": "^3.7.0",
-    "@_linked/server-utils": "^1.15.0",
+    "@_linked/server": "^3.8.0",
+    "@_linked/server-utils": "^1.16.0",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
     "react-error-boundary": "^3.1.3",
