@@ -52,7 +52,7 @@
     "web3"
   ],
   "dependencies": {
-    "@_linked/core": "^2.39.3",
+    "@_linked/core": "^2.40.1",
     "@_linked/css": "^0.3.1",
     "@_linked/fuseki": "^3.7.0",
     "@_linked/primitives": "^1.9.0",
