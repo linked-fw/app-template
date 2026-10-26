@@ -95,7 +95,7 @@ to it. There is no mode switch in code: the store in that file decides.
 | `appData` store | Data goes to | Config |
 |---|---|---|
 | `@_linked/fuseki/shapes/FusekiStore` (committed default) | Fuseki, on the `.env` dataset (`FUSEKI_DATASET`), created on first boot | `endpoint`, `credentials` from `FUSEKI_*` |
-| `@_linked/server/shapes/quadstores/RemoteDataset` with a `url` | a data server, such as Create Now, which decides the dataset from the token | `url` from `DATA_SERVER_URL`, `token` from `DATA_SERVER_TOKEN` |
+| `@_linked/server/shapes/quadstores/RemoteDataset` with a `url` | a data server, such as Create Now, which decides the dataset from the token | `url` from `DATA_SERVER_URL`, `token` from `DATA_SERVER_TOKEN_APPDATA` |
 
 Every boot logs one line naming the store and the dataset it reads and writes
 (`src/utils/storageLog.ts`), so you see where your data goes and when a branch
@@ -116,12 +116,14 @@ An app whose data lives behind a data server sets the entry to:
 ```json
 "appData": {
   "store": "@_linked/server/shapes/quadstores/RemoteDataset",
-  "config": { "url": "${DATA_SERVER_URL:-}", "token": "${DATA_SERVER_TOKEN:-}" }
+  "config": { "url": "${DATA_SERVER_URL:-}", "token": "${DATA_SERVER_TOKEN_APPDATA:-}" }
 }
 ```
 
-and puts `DATA_SERVER_URL` / `DATA_SERVER_TOKEN` in `.env`. The boot pings the
-data server first and stops (exit 1) with a message rather than carrying on
+and puts `DATA_SERVER_URL` / `DATA_SERVER_TOKEN_APPDATA` in `.env`. Each further
+alias (slot) a data server gives the app is an entry of the same form with its
+own token variable, `DATA_SERVER_TOKEN_<SLOT>` (the slot in upper case), and the
+URL is shared. The boot pings the data server for every slot first and stops (exit 1) with a message rather than carrying on
 without data:
 
 - nothing answers at the url, or `DATA_SERVER_URL` is empty: `Could not reach

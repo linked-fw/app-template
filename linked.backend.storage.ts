@@ -1,16 +1,18 @@
 // Backend storage config.
 //
-// Reads linked.backend.datasets.json, dynamically imports the `appData`
-// alias's store class via its npm path, and instantiates it with the entry's
-// `config` verbatim. See the mirror at src/linked.frontend.storage.ts.
+// Reads linked.backend.datasets.json, dynamically imports each alias's (slot's)
+// store class via its npm path, and instantiates it with the entry's `config`
+// verbatim. See the mirror at src/linked.frontend.storage.ts. `appData` is the
+// store every shape uses; a further slot is a store the app's code picks.
 //
-// Whatever store `appData` names is used; there is no mode switch here:
+// Whatever store a slot names is used; there is no mode switch here:
 // - FusekiStore (the committed default): the app talks to Fuseki on the `.env`
 //   dataset, and creates that dataset on first boot.
 // - RemoteDataset with a `url` (what a host such as Create Now sets): every
-//   query goes to the data server at DATA_SERVER_URL with DATA_SERVER_TOKEN,
-//   and the boot stops with a message when it does not answer or refuses the
-//   token (src/utils/storageErrors.ts).
+//   query goes to the data server at DATA_SERVER_URL with the slot's token,
+//   DATA_SERVER_TOKEN_<SLOT> (appData → DATA_SERVER_TOKEN_APPDATA), and the boot
+//   stops with a message when it does not answer or refuses the token
+//   (src/utils/storageErrors.ts).
 // File storage (binary assets) is in its own file, so `linked build-app` can
 // load it without the datasets this file builds.
 import './linked.backend.files';
@@ -40,14 +42,16 @@ const appData = stores.appData as IDataset & {
 };
 
 // setDefaultDataset calls init() without awaiting it, so a boot that must fail
-// loudly awaits it here first (init() is memoized once it succeeds). A
-// RemoteDataset with a url pings its data server here; when nothing answers or
-// the token is refused, the boot stops with the message, not a stack trace.
-if (appData.init) {
+// loudly awaits every slot's init here first (init() is memoized once it
+// succeeds). A RemoteDataset with a url pings its data server here; when nothing
+// answers or the slot's token is refused, the boot stops with the message, not a
+// stack trace.
+for (const [slot, store] of Object.entries(stores) as Array<[string, IDataset]>) {
+  if (!store.init) continue;
   try {
-    await appData.init();
+    await store.init();
   } catch (err) {
-    const message = dataServerMessage(err);
+    const message = dataServerMessage(err, slot);
     if (!message) throw err;
     console.error(message);
     process.exit(1);

@@ -1,5 +1,5 @@
 // An app whose `appData` is a RemoteDataset (as a host such as Create Now
-// writes it) boots against DATA_SERVER_URL with DATA_SERVER_TOKEN, and stops
+// writes it) boots against DATA_SERVER_URL with DATA_SERVER_TOKEN_APPDATA, and stops
 // with a message when the data server cannot be used. Every boot logs one
 // `[storage] appData: …` line naming the store and the dataset it uses.
 //
@@ -86,7 +86,7 @@ function start(
     SITE_ROOT: origin,
     DATA_ROOT: `${origin}/data`,
     DATA_SERVER_URL: dataServerUrl,
-    DATA_SERVER_TOKEN: 'test-token',
+    DATA_SERVER_TOKEN_APPDATA: 'test-token',
     ...extra,
   };
   delete env.E2E_DATASET;
@@ -154,7 +154,7 @@ test('a refused token stops the boot with the token message', async () => {
     expect(run.output).toContain(
       `The data server at ${url} refused this app's token`,
     );
-    expect(run.output).toContain('DATA_SERVER_TOKEN in .env');
+    expect(run.output).toContain('DATA_SERVER_TOKEN_APPDATA in .env');
   } finally {
     server.close();
   }

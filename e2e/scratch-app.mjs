@@ -55,7 +55,7 @@ export const appDataEntries = {
   // What a host such as Create Now writes: a data server at DATA_SERVER_URL.
   remote: {
     store: '@_linked/server/shapes/quadstores/RemoteDataset',
-    config: { url: '${DATA_SERVER_URL:-}', token: '${DATA_SERVER_TOKEN:-}' },
+    config: { url: '${DATA_SERVER_URL:-}', token: '${DATA_SERVER_TOKEN_APPDATA:-}' },
   },
 };
 
