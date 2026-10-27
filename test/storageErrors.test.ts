@@ -16,7 +16,7 @@ test('an unreachable data server names its url and the way to direct mode', () =
   assert.ok(message);
   const lines = message.split('\n');
   assert.equal(lines[0], `Could not reach the data server at ${url}`);
-  assert.equal(lines[1], '(linked.backend.datasets.json → datasets.appData).');
+  assert.equal(lines[1], '(linked.backend.datasets.json → datasets.main).');
   assert.match(message, /"store": "@_linked\/fuseki\/shapes\/FusekiStore"/);
   assert.match(message, /"endpoint": "\$\{FUSEKI_BASE_URL\}\/\$\{FUSEKI_DATASET\}"/);
   assert.equal(
@@ -43,8 +43,8 @@ test("a refused token names the url and the slot's DATA_SERVER_TOKEN_<SLOT>", ()
   assert.ok(message);
   const lines = message.split('\n');
   assert.equal(lines[0], `The data server at ${url} refused this app's token`);
-  assert.match(lines[1], /DATA_SERVER_TOKEN_APPDATA in \.env/);
-  assert.match(lines[1], /datasets\.appData/);
+  assert.match(lines[1], /DATA_SERVER_TOKEN_MAIN in \.env/);
+  assert.match(lines[1], /datasets\.main/);
   assert.match(message, /Start this app once from Create Now/);
   assert.match(message, /"store": "@_linked\/fuseki\/shapes\/FusekiStore"/);
 });
@@ -52,11 +52,11 @@ test("a refused token names the url and the slot's DATA_SERVER_TOKEN_<SLOT>", ()
 test('a further slot names its own alias and token variable', () => {
   const refused = dataServerMessage(
     new RemoteDatasetUnauthorizedError('401', url, 401, 'invalid-credential'),
-    'hr',
+    'nft_meta_data',
   );
-  assert.match(refused ?? '', /DATA_SERVER_TOKEN_HR in \.env, used by linked\.backend\.storage\.ts → datasets\.hr/);
+  assert.match(refused ?? '', /DATA_SERVER_TOKEN_NFT_META_DATA in \.env, used by linked\.backend\.storage\.ts → datasets\.nft_meta_data/);
   const unreachable = dataServerMessage(new RemoteDatasetUnreachableError('no answer', url, 0), 'hr');
-  assert.match(unreachable ?? '', /datasets\.hr\)\.\nStart Create Now locally, or point hr at Fuseki directly:/);
+  assert.match(unreachable ?? '', /datasets\.hr\)\.\nStart Create Now locally, or point datasets\.hr at Fuseki directly:/);
 });
 
 test('any other error is not a boot message', () => {

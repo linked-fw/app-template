@@ -2,7 +2,7 @@
 //
 // Reads linked.backend.datasets.json, dynamically imports each alias's (slot's)
 // store class via its npm path, and instantiates it with the entry's `config`
-// verbatim. See the mirror at src/linked.frontend.storage.ts. `appData` is the
+// verbatim. See the mirror at src/linked.frontend.storage.ts. `main` is the
 // store every shape uses; a further slot is a store the app's code picks.
 //
 // Whatever store a slot names is used; there is no mode switch here:
@@ -10,7 +10,7 @@
 //   dataset, and creates that dataset on first boot.
 // - RemoteDataset with a `url` (what a host such as Create Now sets): every
 //   query goes to the data server at DATA_SERVER_URL with the slot's token,
-//   DATA_SERVER_TOKEN_<SLOT> (appData → DATA_SERVER_TOKEN_APPDATA), and the boot
+//   DATA_SERVER_TOKEN_<SLOT> (main → DATA_SERVER_TOKEN_MAIN), and the boot
 //   stops with a message when it does not answer or refuses the token
 //   (src/utils/storageErrors.ts).
 // File storage (binary assets) is in its own file, so `linked build-app` can
@@ -36,7 +36,7 @@ import { appDataLogLine } from './src/utils/storageLog';
 // Resolve ${VAR} placeholders against the runtime environment.
 const config = parseDatasetsConfig(datasetsConfig, process.env);
 const stores = await loadStores(config);
-const appData = stores.appData as IDataset & {
+const main = stores.main as IDataset & {
   ensureDatasetExists?: () => Promise<unknown>;
   datasetExists?: () => Promise<boolean>;
 };
@@ -61,13 +61,13 @@ for (const [slot, store] of Object.entries(stores) as Array<[string, IDataset]>)
 // RemoteDataset names the dataset when its data server's ping says which one
 // (Create Now's gateway does, and whether the branch has forked its own); a
 // FusekiStore names it from its endpoint. See src/utils/storageLog.ts.
-const remote = appData instanceof RemoteDataset ? appData : undefined;
+const remote = main instanceof RemoteDataset ? main : undefined;
 console.log(
   appDataLogLine({
-    store: appData.constructor.name,
+    store: main.constructor.name,
     url: remote?.url,
     ping: remote?.info,
-    endpoint: config.datasets.appData?.config?.endpoint,
+    endpoint: config.datasets.main?.config?.endpoint,
   }),
 );
 
@@ -80,15 +80,15 @@ console.log(
 // store right after loading this file, and a write to a dataset that does
 // not exist yet fails (FusekiStore throws FusekiQueryError: 405).
 if (shouldEnsureDataset(process.env.LINKED_DATASET_ENSURE)) {
-  if (appData.ensureDatasetExists) {
+  if (main.ensureDatasetExists) {
     try {
-      await appData.ensureDatasetExists();
+      await main.ensureDatasetExists();
     } catch (err) {
       console.warn('dataset ensure failed:', err);
     }
   }
-} else if (appData.datasetExists) {
-  appData
+} else if (main.datasetExists) {
+  main
     .datasetExists()
     .then((exists) => {
       if (!exists) {
@@ -113,7 +113,7 @@ const exampleShapes = new Set(
     .filter((id): id is string => !!id),
 );
 withAccess(
-  appData,
+  main,
   exampleAccess(
     exampleShapes,
     allowsAnonymousExampleWrites(process.env.NODE_ENV),
@@ -122,5 +122,5 @@ withAccess(
 
 // Shape → alias. Single alias → default for every shape. For multi-alias
 // add per-shape pins, e.g.:
-//   LinkedStorage.setDatasetForShapes(stores.appData, [Person]);
-LinkedStorage.setDefaultDataset(appData);
+//   LinkedStorage.setDatasetForShapes(stores.main, [Person]);
+LinkedStorage.setDefaultDataset(main);

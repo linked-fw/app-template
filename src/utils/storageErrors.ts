@@ -1,6 +1,6 @@
 /**
  * What to tell the developer when a slot (an alias of
- * `linked.backend.datasets.json`, `appData` by default) is a `RemoteDataset`
+ * `linked.backend.datasets.json`, `main` by default) is a `RemoteDataset`
  * that cannot be used at boot: nothing answers at its url, or the server refused
  * the slot's token.
  *
@@ -18,7 +18,10 @@ const DIRECT_MODE = [
   "Direct mode does not fork branches or apply Create Now's access rules.",
 ];
 
-/** The `.env` variable holding the token of `slot`: `appData` → `DATA_SERVER_TOKEN_APPDATA`. */
+/**
+ * The `.env` variable holding the token of `slot`, the slot upper-cased. A slot is lowercase
+ * snake_case: `main` → `DATA_SERVER_TOKEN_MAIN`, `nft_meta_data` → `DATA_SERVER_TOKEN_NFT_META_DATA`.
+ */
 export function tokenVariable(slot: string): string {
   return `DATA_SERVER_TOKEN_${slot.toUpperCase()}`;
 }
@@ -28,14 +31,14 @@ export function tokenVariable(slot: string): string {
  * is not a data server error the boot reports (the caller rethrows those as
  * they are).
  */
-export function dataServerMessage(err: unknown, slot = 'appData'): string | undefined {
+export function dataServerMessage(err: unknown, slot = 'main'): string | undefined {
   if (err instanceof RemoteDatasetUnreachableError) {
     return [
       err.url
         ? `Could not reach the data server at ${err.url}`
         : 'No data server is set: DATA_SERVER_URL is empty in .env',
       `(linked.backend.datasets.json → datasets.${slot}).`,
-      `Start Create Now locally, or point ${slot} at Fuseki directly:`,
+      `Start Create Now locally, or point datasets.${slot} at Fuseki directly:`,
       ...DIRECT_MODE,
     ].join('\n');
   }
@@ -44,7 +47,7 @@ export function dataServerMessage(err: unknown, slot = 'appData'): string | unde
       `The data server at ${err.url} refused this app's token`,
       `(${tokenVariable(slot)} in .env, used by linked.backend.storage.ts → datasets.${slot}).`,
       'Start this app once from Create Now, which writes a fresh token into .env, or clone the',
-      `branch again. To run without Create Now, point ${slot} at Fuseki directly:`,
+      `branch again. To run without Create Now, point datasets.${slot} at Fuseki directly:`,
       ...DIRECT_MODE,
     ].join('\n');
   }
