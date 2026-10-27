@@ -1,9 +1,11 @@
 /**
- * What to tell the developer when `appData` is a `RemoteDataset` that cannot be
- * used at boot: nothing answers at its url, or the server refused the token.
+ * What to tell the developer when a slot (an alias of
+ * `linked.backend.datasets.json`, `main` by default) is a `RemoteDataset`
+ * that cannot be used at boot: nothing answers at its url, or the server refused
+ * the slot's token.
  *
- * Only a `RemoteDataset` raises these errors, so an app whose `appData` is a
- * `FusekiStore` never shows them.
+ * Only a `RemoteDataset` raises these errors, so an app whose slots are
+ * `FusekiStore`s never shows them.
  */
 import {
   RemoteDatasetUnauthorizedError,
@@ -17,26 +19,35 @@ const DIRECT_MODE = [
 ];
 
 /**
- * The boot message for `err`, or undefined when `err` is not a data server
- * error the boot reports (the caller rethrows those as they are).
+ * The `.env` variable holding the token of `slot`, the slot upper-cased. A slot is lowercase
+ * snake_case: `main` → `DATA_SERVER_TOKEN_MAIN`, `nft_meta_data` → `DATA_SERVER_TOKEN_NFT_META_DATA`.
  */
-export function dataServerMessage(err: unknown): string | undefined {
+export function tokenVariable(slot: string): string {
+  return `DATA_SERVER_TOKEN_${slot.toUpperCase()}`;
+}
+
+/**
+ * The boot message for `err` from the store of `slot`, or undefined when `err`
+ * is not a data server error the boot reports (the caller rethrows those as
+ * they are).
+ */
+export function dataServerMessage(err: unknown, slot = 'main'): string | undefined {
   if (err instanceof RemoteDatasetUnreachableError) {
     return [
       err.url
         ? `Could not reach the data server at ${err.url}`
         : 'No data server is set: DATA_SERVER_URL is empty in .env',
-      '(linked.backend.datasets.json → datasets.appData).',
-      'Start Create Now locally, or point appData at Fuseki directly:',
+      `(linked.backend.datasets.json → datasets.${slot}).`,
+      `Start Create Now locally, or point datasets.${slot} at Fuseki directly:`,
       ...DIRECT_MODE,
     ].join('\n');
   }
   if (err instanceof RemoteDatasetUnauthorizedError) {
     return [
       `The data server at ${err.url} refused this app's token`,
-      '(DATA_SERVER_TOKEN in .env, used by linked.backend.storage.ts → datasets.appData).',
+      `(${tokenVariable(slot)} in .env, used by linked.backend.storage.ts → datasets.${slot}).`,
       'Start this app once from Create Now, which writes a fresh token into .env, or clone the',
-      'branch again. To run without Create Now, point appData at Fuseki directly:',
+      `branch again. To run without Create Now, point datasets.${slot} at Fuseki directly:`,
       ...DIRECT_MODE,
     ].join('\n');
   }

@@ -6,11 +6,11 @@
 // - `project`: the app as Create Now generates it, with an ontology and an asset
 //   package in packages/ (see e2e/project-app.mjs), built in a scratch directory.
 //
-// Both copies boot with `appData` set to FusekiStore (e2e/scratch-app.mjs),
+// Both copies boot with `main` set to FusekiStore (e2e/scratch-app.mjs),
 // whatever linked.backend.datasets.json commits: an app Create Now generates
 // commits a RemoteDataset on its gateway, and the run must not need one.
 //
-// A third project, `data-server-boot`, boots a scratch copy whose `appData` is a
+// A third project, `data-server-boot`, boots a scratch copy whose `main` is a
 // RemoteDataset against a dead url, a stub data server and an empty url, and
 // checks it boots or stops with the right message (e2e/data-server-boot.spec.ts);
 // no browser.

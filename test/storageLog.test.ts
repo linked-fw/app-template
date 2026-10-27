@@ -10,11 +10,11 @@ test('FusekiStore: the Fuseki base and the dataset', () => {
       store: 'FusekiStore',
       endpoint: 'http://localhost:3030/acme-shop-change-1-data',
     }),
-    '[storage] appData: FusekiStore at http://localhost:3030 → dataset acme-shop-change-1-data',
+    '[storage] main: FusekiStore at http://localhost:3030 → dataset acme-shop-change-1-data',
   );
   assert.equal(
     appDataLogLine({ store: 'FusekiStore', endpoint: 'not a url' }),
-    '[storage] appData: FusekiStore',
+    '[storage] main: FusekiStore',
   );
 });
 
@@ -28,7 +28,7 @@ test('RemoteDataset via a gateway that names the dataset: forked or on main', ()
   };
   assert.equal(
     appDataLogLine({ store: 'RemoteDataset', url: GATEWAY, ping }),
-    `[storage] appData: RemoteDataset at ${GATEWAY} → dataset acme-shop-data (branch change-1, still on main's data)`,
+    `[storage] main: RemoteDataset at ${GATEWAY} → dataset acme-shop-data (branch change-1, still on main's data)`,
   );
   assert.equal(
     appDataLogLine({
@@ -36,7 +36,7 @@ test('RemoteDataset via a gateway that names the dataset: forked or on main', ()
       url: GATEWAY,
       ping: { ...ping, dataset: 'acme-shop-change-1-data', forked: true },
     }),
-    `[storage] appData: RemoteDataset at ${GATEWAY} → dataset acme-shop-change-1-data (branch change-1, forked)`,
+    `[storage] main: RemoteDataset at ${GATEWAY} → dataset acme-shop-change-1-data (branch change-1, forked)`,
   );
   assert.equal(
     appDataLogLine({
@@ -44,7 +44,7 @@ test('RemoteDataset via a gateway that names the dataset: forked or on main', ()
       url: GATEWAY,
       ping: { ...ping, branchName: 'main' },
     }),
-    `[storage] appData: RemoteDataset at ${GATEWAY} → dataset acme-shop-data (branch main)`,
+    `[storage] main: RemoteDataset at ${GATEWAY} → dataset acme-shop-data (branch main)`,
   );
   assert.equal(
     appDataLogLine({
@@ -52,7 +52,7 @@ test('RemoteDataset via a gateway that names the dataset: forked or on main', ()
       url: GATEWAY,
       ping: { ok: true, dataset: 'd' },
     }),
-    `[storage] appData: RemoteDataset at ${GATEWAY} → dataset d`,
+    `[storage] main: RemoteDataset at ${GATEWAY} → dataset d`,
   );
 });
 
@@ -63,13 +63,13 @@ test('RemoteDataset at a server that answers the generic ping only', () => {
       url: GATEWAY,
       ping: { ok: true },
     }),
-    `[storage] appData: RemoteDataset at ${GATEWAY}`,
+    `[storage] main: RemoteDataset at ${GATEWAY}`,
   );
 });
 
 test('any other store: its name', () => {
   assert.equal(
     appDataLogLine({ store: 'MemoryStore' }),
-    '[storage] appData: MemoryStore',
+    '[storage] main: MemoryStore',
   );
 });
