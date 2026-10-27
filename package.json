@@ -5,7 +5,9 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "linkedApp": true,
+  "linked": {
+    "kind": "app"
+  },
   "author": {
     "name": "",
     "url": "",
