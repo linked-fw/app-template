@@ -5,7 +5,7 @@
 # pushes to blank (sync-blank.yml's merges of main among them), and on demand.
 #
 # Not the shared linked-fw/.github pr.yml: that one runs `linked build`, which
-# refuses an app ("is a linkedApp, not a linkedPackage"). The job is still named
+# refuses an app (`linked.kind: "app"`, "not a linked package"). The job is still named
 # `Build & Test`, the check name the other linked-fw repos require, so it is
 # what Renovate's automerge of the `linked framework` group and of
 # lockFileMaintenance waits on.

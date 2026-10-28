@@ -140,7 +140,7 @@ absent, unless `LINKED_DATASET_ENSURE=0`.
 
 ## Shapes, ontologies and components live in packages
 
-The app is a `linkedApp`, not a linked package: it has no `src/package.ts` and
+The app is an app (`"linked": {"kind": "app"}` in `package.json`), not a linked package: it has no `src/package.ts` and
 registers no shapes, ontologies or linked components of its own. Put them in
 packages inside this repo, which the app depends on through an npm workspace:
 
