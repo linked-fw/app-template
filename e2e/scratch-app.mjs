@@ -1,4 +1,4 @@
-// Scratch copies of this repo for the e2e run, each with the `appData` store it
+// Scratch copies of this repo for the e2e run, each with the `main` store it
 // tests written into its linked.backend.datasets.json. The suite never relies
 // on the store the repo commits: a template clone commits a FusekiStore, but an
 // app Create Now generates commits a RemoteDataset on its gateway, and the e2e
@@ -6,7 +6,7 @@
 //
 // As a command (the `template` web server in playwright.config.ts):
 //   node e2e/scratch-app.mjs <dir> <fuseki|remote>
-// copies the repo to <dir>, links its node_modules and sets `appData`.
+// copies the repo to <dir>, links its node_modules and sets `main`.
 import {
   cpSync,
   existsSync,
@@ -37,7 +37,7 @@ const skip = new Set([
   'data',
 ]);
 
-/** The `appData` entries the e2e boots with. */
+/** The `main` entries the e2e boots with. */
 export const appDataEntries = {
   // The template's committed default: Fuseki at FUSEKI_BASE_URL/FUSEKI_DATASET.
   fuseki: {
@@ -55,7 +55,7 @@ export const appDataEntries = {
   // What a host such as Create Now writes: a data server at DATA_SERVER_URL.
   remote: {
     store: '@_linked/server/shapes/quadstores/RemoteDataset',
-    config: { url: '${DATA_SERVER_URL:-}', token: '${DATA_SERVER_TOKEN:-}' },
+    config: { url: '${DATA_SERVER_URL:-}', token: '${DATA_SERVER_TOKEN_MAIN:-}' },
   },
 };
 
@@ -73,17 +73,17 @@ export function copyRepo(dir, { linkNodeModules = false } = {}) {
     symlinkSync(join(repo, 'node_modules'), join(dir, 'node_modules'), 'dir');
 }
 
-/** Sets `appData` in <dir>/linked.backend.datasets.json; every other key is kept. */
+/** Sets `main` in <dir>/linked.backend.datasets.json; every other key is kept. */
 export function setAppData(dir, mode) {
   const entry = appDataEntries[mode];
   if (!entry)
-    throw new Error(`unknown appData mode "${mode}" (fuseki or remote)`);
+    throw new Error(`unknown mode "${mode}" (fuseki or remote)`);
   const file = join(dir, 'linked.backend.datasets.json');
   const config = JSON.parse(readFileSync(file, 'utf8'));
-  config.datasets = { ...config.datasets, appData: entry };
+  config.datasets = { ...config.datasets, main: entry };
   writeFileSync(file, JSON.stringify(config, null, 2) + '\n');
   console.log(
-    `[scratch-app] ${file}: appData is a ${entry.store.split('/').pop()}`,
+    `[scratch-app] ${file}: main is a ${entry.store.split('/').pop()}`,
   );
 }
 

@@ -72,7 +72,7 @@ dataset is reported instead of silently re-created empty. Unset means on.
 
 | File | Purpose |
 |---|---|
-| `linked.backend.datasets.json` | Backend Layer 2 — alias → store class + config. Committed; `appData` is `FusekiStore` by default. |
+| `linked.backend.datasets.json` | Backend Layer 2 — alias → store class + config. Committed; `main` is `FusekiStore` by default. |
 | `linked.backend.storage.ts` | Backend Layer 1 — shape → alias routing. Parses the JSON, instantiates stores via `loadStores`, calls `LinkedStorage.setDefaultDataset(...)` / `setDatasetForShapes(...)`. |
 | `linked.backend.files.ts` | Backend file storage (binary assets): registers the file stores on `LinkedFileStorage`. The storage file imports it; `linked build-app` and `linked publish-app` load only this file to find where a release is published, so a build needs no Fuseki or data server. Keep dataset code out of it. |
 | `src/linked.frontend.{storage.ts,datasets.json}` | Frontend mirror — same JSON shape, public values only; storage TS imports store classes explicitly and constructs one per alias. |
@@ -88,40 +88,44 @@ All of these are referenced as `${VAR:-default}` placeholders in `linked.backend
 
 ### Fuseki or a data server
 
-`linked.backend.storage.ts` loads the `appData` alias of
+`linked.backend.storage.ts` loads the `main` alias of
 `linked.backend.datasets.json`, whatever store it names, and routes every shape
 to it. There is no mode switch in code: the store in that file decides.
 
-| `appData` store | Data goes to | Config |
+| `main` store | Data goes to | Config |
 |---|---|---|
 | `@_linked/fuseki/shapes/FusekiStore` (committed default) | Fuseki, on the `.env` dataset (`FUSEKI_DATASET`), created on first boot | `endpoint`, `credentials` from `FUSEKI_*` |
-| `@_linked/server/shapes/quadstores/RemoteDataset` with a `url` | a data server, such as Create Now, which decides the dataset from the token | `url` from `DATA_SERVER_URL`, `token` from `DATA_SERVER_TOKEN` |
+| `@_linked/server/shapes/quadstores/RemoteDataset` with a `url` | a data server, such as Create Now, which decides the dataset from the token | `url` from `DATA_SERVER_URL`, `token` from `DATA_SERVER_TOKEN_MAIN` |
 
 Every boot logs one line naming the store and the dataset it reads and writes
 (`src/utils/storageLog.ts`), so you see where your data goes and when a branch
 has forked its own:
 
 ```
-[storage] appData: FusekiStore at http://localhost:3030 → dataset acme-shop-change-1-data
-[storage] appData: RemoteDataset at http://localhost:4040/gateway → dataset acme-shop-data (branch change-1, still on main's data)
-[storage] appData: RemoteDataset at http://localhost:4040/gateway → dataset acme-shop-change-1-data (branch change-1, forked)
+[storage] main: FusekiStore at http://localhost:3030 → dataset acme-shop-change-1-data
+[storage] main: RemoteDataset at http://localhost:4040/gateway → dataset acme-shop-data (branch change-1, still on main's data)
+[storage] main: RemoteDataset at http://localhost:4040/gateway → dataset acme-shop-change-1-data (branch change-1, forked)
 ```
 
 A `RemoteDataset` names the dataset only when the data server's `ping` says
 which one it serves (Create Now's gateway does); against a server that answers
-the generic `{ok: true}`, the line is `[storage] appData: RemoteDataset at <url>`.
+the generic `{ok: true}`, the line is `[storage] main: RemoteDataset at <url>`.
 
 An app whose data lives behind a data server sets the entry to:
 
 ```json
-"appData": {
+"main": {
   "store": "@_linked/server/shapes/quadstores/RemoteDataset",
-  "config": { "url": "${DATA_SERVER_URL:-}", "token": "${DATA_SERVER_TOKEN:-}" }
+  "config": { "url": "${DATA_SERVER_URL:-}", "token": "${DATA_SERVER_TOKEN_MAIN:-}" }
 }
 ```
 
-and puts `DATA_SERVER_URL` / `DATA_SERVER_TOKEN` in `.env`. The boot pings the
-data server first and stops (exit 1) with a message rather than carrying on
+and puts `DATA_SERVER_URL` / `DATA_SERVER_TOKEN_MAIN` in `.env`. Each further
+alias (slot) a data server gives the app is an entry of the same form with its
+own token variable, `DATA_SERVER_TOKEN_<SLOT>` (the slot in upper case), and the
+URL is shared. A slot is lowercase snake_case (`main`, `nft_meta_data` →
+`DATA_SERVER_TOKEN_NFT_META_DATA`): it is the app's code alias for the role a
+dataset plays, so it stays when the dataset behind it changes. The boot pings the data server for every slot first and stops (exit 1) with a message rather than carrying on
 without data:
 
 - nothing answers at the url, or `DATA_SERVER_URL` is empty: `Could not reach
@@ -206,11 +210,11 @@ an ontology and an asset package in `packages/`. Vite pre-bundles the client
 differently once an app has source workspaces. Install Chromium once with
 `npx playwright install chromium`. The template's PR check runs both suites.
 
-The e2e runs every app it boots from a scratch copy and writes the `appData` it
+The e2e runs every app it boots from a scratch copy and writes the `main` it
 tests into that copy's `linked.backend.datasets.json`: a FusekiStore for both
 layouts, a RemoteDataset on a stub data server for the data server cases. It
 passes whatever the file commits, including in an app Create Now generates
-(where `appData` is Create Now's gateway), and never needs a data server.
+(where `main` is Create Now's gateway), and never needs a data server.
 
 The `ontology` suite checks the generated-project copy's dataset after boot: the
 ontology package's Turtle (to which the e2e adds `Widget rdfs:subClassOf Item`)

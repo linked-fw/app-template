@@ -27,14 +27,14 @@ const config = parseDatasetsConfig(datasetsConfig, {});
 // with the alias's `config`. Adding a new alias = add an import + a line.
 // No `url`: the browser talks to this app's own backend. Never put a token in
 // a frontend file, it ships in the bundle.
-const appData = new RemoteDataset(config.datasets.appData.config);
+const main = new RemoteDataset(config.datasets.main.config);
 // Direct-to-Fuseki alternative (no creds in browser):
-// const appData = new FusekiStore(config.datasets.appData.config);
+// const main = new FusekiStore(config.datasets.main.config);
 
 // Shape → alias. For multi-alias setups add per-shape pins, e.g.:
 //   import { PageView } from './shapes/PageView';
 //   LinkedStorage.setDatasetForShapes(analytics, [PageView]);
-LinkedStorage.setDefaultDataset(appData);
+LinkedStorage.setDefaultDataset(main);
 
 // File asset URLs.
 LinkedFileStorage.setDefaultAccessURL(getAccessUrlLocalFileStore());

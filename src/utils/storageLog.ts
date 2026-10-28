@@ -1,12 +1,12 @@
 /**
- * The one line the boot logs about `appData`: which store, where, and which
+ * The one line the boot logs about `main`: which store, where, and which
  * dataset, so a developer sees which data the app reads and writes, and when a
  * branch has forked its own.
  *
- *   [storage] appData: FusekiStore at http://localhost:3030 → dataset acme-shop-data
- *   [storage] appData: RemoteDataset at http://localhost:4040/gateway → dataset acme-shop-data (branch change-1, still on main's data)
- *   [storage] appData: RemoteDataset at http://localhost:4040/gateway → dataset acme-shop-change-1-data (branch change-1, forked)
- *   [storage] appData: RemoteDataset at https://data.example.com
+ *   [storage] main: FusekiStore at http://localhost:3030 → dataset acme-shop-data
+ *   [storage] main: RemoteDataset at http://localhost:4040/gateway → dataset acme-shop-data (branch change-1, still on main's data)
+ *   [storage] main: RemoteDataset at http://localhost:4040/gateway → dataset acme-shop-change-1-data (branch change-1, forked)
+ *   [storage] main: RemoteDataset at https://data.example.com
  *
  * A RemoteDataset names the dataset only when its data server's `ping` says
  * which one it serves (Create Now's gateway answers `{ok, projectId,
@@ -27,7 +27,7 @@ const text = (value: unknown): string | undefined =>
   typeof value === 'string' && value.trim() ? value.trim() : undefined;
 
 export function appDataLogLine(input: AppDataLogInput): string {
-  const head = `[storage] appData: ${input.store}`;
+  const head = `[storage] main: ${input.store}`;
   const url = text(input.url);
   if (url) {
     const dataset = text(input.ping?.dataset);

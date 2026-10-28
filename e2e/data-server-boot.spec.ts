@@ -1,10 +1,10 @@
-// An app whose `appData` is a RemoteDataset (as a host such as Create Now
-// writes it) boots against DATA_SERVER_URL with DATA_SERVER_TOKEN, and stops
+// An app whose `main` is a RemoteDataset (as a host such as Create Now
+// writes it) boots against DATA_SERVER_URL with DATA_SERVER_TOKEN_MAIN, and stops
 // with a message when the data server cannot be used. Every boot logs one
-// `[storage] appData: …` line naming the store and the dataset it uses.
+// `[storage] main: …` line naming the store and the dataset it uses.
 //
 // No browser. Each test boots a scratch copy of this repo (node_modules linked
-// from the repo) and reads its exit code and output. Each copy has the `appData`
+// from the repo) and reads its exit code and output. Each copy has the `main`
 // it tests written into its linked.backend.datasets.json (e2e/scratch-app.mjs):
 // a RemoteDataset for the data server cases, a FusekiStore for the last one,
 // whichever of the two the repo commits. The data server is a small node:http stub,
@@ -86,7 +86,7 @@ function start(
     SITE_ROOT: origin,
     DATA_ROOT: `${origin}/data`,
     DATA_SERVER_URL: dataServerUrl,
-    DATA_SERVER_TOKEN: 'test-token',
+    DATA_SERVER_TOKEN_MAIN: 'test-token',
     ...extra,
   };
   delete env.E2E_DATASET;
@@ -119,14 +119,14 @@ function stop(child: ChildProcess) {
   }
 }
 
-/** The `[storage] appData: …` line of a boot, once it is logged (undefined if the app exits first). */
+/** The `[storage] main: …` line of a boot, once it is logged (undefined if the app exits first). */
 async function storageLine(run: ReturnType<typeof start>, timeoutMs = 150_000) {
   const deadline = Date.now() + timeoutMs;
   for (;;) {
     const line = run.output
       .split('\n')
-      .find((l) => l.includes('[storage] appData: '));
-    if (line) return line.slice(line.indexOf('[storage] appData: ')).trimEnd();
+      .find((l) => l.includes('[storage] main: '));
+    if (line) return line.slice(line.indexOf('[storage] main: ')).trimEnd();
     if (run.child.exitCode !== null || Date.now() > deadline) return undefined;
     await new Promise((done) => setTimeout(done, 250));
   }
@@ -141,7 +141,7 @@ test('an unreachable data server stops the boot with its url', async () => {
   const code = await exited(run.child);
   expect(code, run.output).not.toBe(0);
   expect(run.output).toContain(`Could not reach the data server at ${url}`);
-  expect(run.output).toContain('point appData at Fuseki directly');
+  expect(run.output).toContain('point datasets.main at Fuseki directly');
 });
 
 test('a refused token stops the boot with the token message', async () => {
@@ -154,7 +154,7 @@ test('a refused token stops the boot with the token message', async () => {
     expect(run.output).toContain(
       `The data server at ${url} refused this app's token`,
     );
-    expect(run.output).toContain('DATA_SERVER_TOKEN in .env');
+    expect(run.output).toContain('DATA_SERVER_TOKEN_MAIN in .env');
   } finally {
     server.close();
   }
@@ -178,7 +178,7 @@ test('an answering data server: the app boots and serves /', async () => {
     expect(status, run.output).toBe(200);
     // The generic ping answers {ok: true}: the line names the server only.
     expect(await storageLine(run), run.output).toBe(
-      `[storage] appData: RemoteDataset at ${url}`,
+      `[storage] main: RemoteDataset at ${url}`,
     );
   } finally {
     stop(run.child);
@@ -224,7 +224,7 @@ test('a gateway that names the dataset: the line says which, and whether the bra
     const run = start(url);
     try {
       expect(await storageLine(run), run.output).toBe(
-        `[storage] appData: RemoteDataset at ${url} ${expected}`,
+        `[storage] main: RemoteDataset at ${url} ${expected}`,
       );
     } finally {
       stop(run.child);
@@ -252,7 +252,7 @@ test('FusekiStore: the line names the Fuseki base and the dataset', async () => 
   );
   try {
     expect(await storageLine(run), run.output).toBe(
-      `[storage] appData: FusekiStore at ${base} → dataset acme-shop-change-1-data`,
+      `[storage] main: FusekiStore at ${base} → dataset acme-shop-change-1-data`,
     );
   } finally {
     stop(run.child);
