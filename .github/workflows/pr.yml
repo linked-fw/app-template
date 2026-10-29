@@ -60,7 +60,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v7
         with:
-          node-version: '24.21.0'
+          node-version: '24.22.2'
 
       # setup-node does not install the npm that `packageManager` names.
       - name: Use the npm named in packageManager
