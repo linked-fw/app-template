@@ -1,0 +1,6 @@
+{
+  "$schema": "https://linked.cm/schema/app/1.json",
+  "schemaVersion": 1,
+  "prefixes": {},
+  "cssMode": "tailwind"
+}
