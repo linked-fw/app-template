@@ -1,7 +1,8 @@
 # Keeps `main` (the template with the People example) in step with `blank`
 # (the clean app the example is built on): on every push to blank, merge blank
-# into main with a merge commit by the Actions bot and push it. Never a force
-# push, never a rebase. `blank` is the base: tooling, framework ranges and
+# into main with a merge commit by the Actions bot and open (or update) a pull
+# request into main from the branch `sync/blank-into-main`; main is protected, so
+# the merge reaches it through that PR and its check. Never a rebase. `blank` is the base: tooling, framework ranges and
 # Renovate's bumps land there; `main` only adds the example and the packages it
 # uses (@_linked/schema, @_linked/primitives) on top.
 #
@@ -9,10 +10,10 @@
 # case is a file both edit (package.json, package-lock.json, routes, the home
 # page). Resolve it by hand as the readme describes ("The blank variant").
 #
-# The push uses the linked-fw release app's token (RELEASE_APP_ID /
+# The push and the PR use the linked-fw release app's token (RELEASE_APP_ID /
 # RELEASE_APP_PRIVATE_KEY, as linked-fw/.github's publish.yml does), not
-# GITHUB_TOKEN: a GITHUB_TOKEN push starts no workflow, and the app's push to
-# main starts the PR check (pr.yml) there. A merge that changes a file under
+# GITHUB_TOKEN: a GITHUB_TOKEN push starts no workflow, and the app's PR starts
+# the PR check (pr.yml). A merge that changes a file under
 # .github/workflows/ needs the app to hold the `workflows: write` permission;
 # without it GitHub refuses the push and the job fails.
 #
@@ -79,10 +80,10 @@ jobs:
               echo "Resolve by hand, keeping main's example (readme, \"The blank variant\"):"
               echo
               echo '```'
-              echo 'git fetch origin && git switch main && git pull --ff-only'
+              echo 'git fetch origin && git switch -c sync/blank-into-main origin/main'
               echo 'git merge origin/blank'
               echo '# package-lock.json: take blank'"'"'s, then npm install to add the example'"'"'s packages back'
-              echo 'git commit && git push origin main'
+              echo 'git commit && git push -u origin sync/blank-into-main  # then a PR into main'
               echo '```'
             } >> "$GITHUB_STEP_SUMMARY"
             for f in $conflicts; do
@@ -92,7 +93,15 @@ jobs:
             exit 1
           fi
           git log --oneline -1
-          if ! git push origin HEAD:main; then
-            echo "::error::pushing the merge to main was refused. A merge that changes .github/workflows/ needs the release app to hold workflows: write; otherwise main moved meanwhile (re-run the job)."
+          # The sync branch only ever holds this job's merge, so it is replaced each run.
+          if ! git push --force origin HEAD:refs/heads/sync/blank-into-main; then
+            echo "::error::pushing sync/blank-into-main was refused. A merge that changes .github/workflows/ needs the release app to hold workflows: write."
             exit 1
           fi
+          if [ -z "$(gh pr list --head sync/blank-into-main --base main --state open --json number --jq '.[].number')" ]; then
+            gh pr create --head sync/blank-into-main --base main \
+              --title "Merge blank into main" \
+              --body "Brings main up to date with blank (${blank_sha:0:7}). Opened by the Sync main workflow; merge it with a merge commit once the check is green."
+          fi
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
