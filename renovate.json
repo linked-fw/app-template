@@ -1,4 +1,19 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["local>linked-fw/renovate-config"]
+  "extends": ["local>linked-fw/renovate-config"],
+  "baseBranchPatterns": ["blank", "main"],
+  "packageRules": [
+    {
+      "description": "main is blank plus the example: its shared dependencies arrive by the merge of blank, so on main Renovate bumps only the example's own packages.",
+      "matchBaseBranches": ["main"],
+      "matchPackageNames": ["!@_linked/schema", "!@_linked/primitives"],
+      "enabled": false
+    },
+    {
+      "description": "Lockfile maintenance runs on blank only; main's lockfile follows by the merge.",
+      "matchBaseBranches": ["main"],
+      "matchUpdateTypes": ["lockFileMaintenance"],
+      "enabled": false
+    }
+  ]
 }

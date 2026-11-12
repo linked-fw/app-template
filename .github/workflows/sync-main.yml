@@ -1,0 +1,98 @@
+# Keeps `main` (the template with the People example) in step with `blank`
+# (the clean app the example is built on): on every push to blank, merge blank
+# into main with a merge commit by the Actions bot and push it. Never a force
+# push, never a rebase. `blank` is the base: tooling, framework ranges and
+# Renovate's bumps land there; `main` only adds the example and the packages it
+# uses (@_linked/schema, @_linked/primitives) on top.
+#
+# A conflict fails the job and names the files; nothing is pushed. The usual
+# case is a file both edit (package.json, package-lock.json, routes, the home
+# page). Resolve it by hand as the readme describes ("The blank variant").
+#
+# The push uses the linked-fw release app's token (RELEASE_APP_ID /
+# RELEASE_APP_PRIVATE_KEY, as linked-fw/.github's publish.yml does), not
+# GITHUB_TOKEN: a GITHUB_TOKEN push starts no workflow, and the app's push to
+# main starts the PR check (pr.yml) there. A merge that changes a file under
+# .github/workflows/ needs the app to hold the `workflows: write` permission;
+# without it GitHub refuses the push and the job fails.
+#
+# Apps generated from this template inherit the file; the job only runs in the
+# template's own repository.
+name: Sync main
+
+on:
+  push:
+    branches:
+      - blank
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sync-main
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    name: Merge blank into main
+    if: github.repository == 'linked-fw/app-template'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Generate GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: ${{ secrets.RELEASE_APP_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+
+      - name: Checkout main
+        uses: actions/checkout@v7
+        with:
+          ref: main
+          fetch-depth: 0
+          token: ${{ steps.app-token.outputs.token }}
+
+      - name: Merge blank into main
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git fetch --no-tags origin blank
+          blank_sha=$(git rev-parse origin/blank)
+          if git merge-base --is-ancestor "$blank_sha" HEAD; then
+            echo "main already contains blank ($blank_sha)."
+            exit 0
+          fi
+          if ! git merge --no-ff --no-edit -m "Merge blank (${blank_sha:0:7}) into main" "$blank_sha"; then
+            conflicts=$(git diff --name-only --diff-filter=U)
+            {
+              echo "## Merging blank into main conflicts"
+              echo
+              echo "Nothing was pushed. Conflicted files:"
+              echo
+              echo '```'
+              git status --short
+              echo '```'
+              echo
+              echo "Resolve by hand, keeping main's example (readme, \"The blank variant\"):"
+              echo
+              echo '```'
+              echo 'git fetch origin && git switch main && git pull --ff-only'
+              echo 'git merge origin/blank'
+              echo '# package-lock.json: take blank'"'"'s, then npm install to add the example'"'"'s packages back'
+              echo 'git commit && git push origin main'
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+            for f in $conflicts; do
+              echo "::error file=$f::merging blank into main conflicts on $f"
+            done
+            git merge --abort
+            exit 1
+          fi
+          git log --oneline -1
+          if ! git push origin HEAD:main; then
+            echo "::error::pushing the merge to main was refused. A merge that changes .github/workflows/ needs the release app to hold workflows: write; otherwise main moved meanwhile (re-run the job)."
+            exit 1
+          fi

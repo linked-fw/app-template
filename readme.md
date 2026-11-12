@@ -276,41 +276,41 @@ Use `npm install`, not `npm ci`, while checkouts are present. Details:
 
 ## The blank variant
 
-The `blank` branch is this template without the People example: no example
-shapes, components or pages, and no example access rule. Its one home page
-renders the app's name (`APP_NAME`). Every piece of tooling is the same as on
-`main`: storage config, scripts, build config, Renovate, the PR check and the
-`packages/` layout. Create Now creates new projects from it, and you can start
-an app from it directly:
+The `blank` branch is the clean app: no example shapes or screens, one home
+page that renders the app's name (`APP_NAME`), and only the packages such an
+app uses. `main` is `blank` with the People example on top: its shapes,
+components and pages, its access rule, and the packages they use
+(`@_linked/schema`, `@_linked/primitives`). Every piece of tooling is the same
+on both: storage config, scripts, build config, Renovate, the PR check and the
+`packages/` layout. Start an app from it directly:
 
 ```bash
 git clone --branch blank --single-branch https://github.com/linked-fw/app-template.git my-app
 ```
 
-`.github/workflows/sync-blank.yml` keeps it current: on every push to `main` it
-merges `main` into `blank` with a merge commit and pushes it (never a force
-push), which starts the PR check on `blank`. The push uses the linked-fw release
-app's token; a merge that changes a file under `.github/workflows/` needs that
-app to hold `workflows: write`.
+`blank` is the base. Tooling changes, framework ranges and Renovate's bumps
+land on `blank`; only changes to the example land on `main`.
+`.github/workflows/sync-main.yml` keeps `main` current: on every push to
+`blank` it merges `blank` into `main` with a merge commit and pushes it (never a
+force push), which starts the PR check on `main`. The push uses the linked-fw
+release app's token; a merge that changes a file under `.github/workflows/`
+needs that app to hold `workflows: write`.
 
 When the merge conflicts, the job fails, names the conflicted files in its
-summary, and pushes nothing. The expected case is `main` changing a file that
-`blank` deletes (a modify/delete conflict, e.g. a fix to
-`src/components/PersonOverview.tsx`). Resolve it by hand, keeping `blank`'s
-removals:
+summary, and pushes nothing. The expected cases are a file both edit (the
+routes, the home page) and the lockfile, where `main` lists the example's
+packages too. Resolve it by hand, keeping `main`'s example:
 
 ```bash
 git fetch origin
-git switch blank && git pull --ff-only
-git merge origin/main
-git rm <each file blank deletes>   # modify/delete: keep it deleted
-# a content conflict: keep main's change unless it brings the example back
+git switch main && git pull --ff-only
+git merge origin/blank
+# package.json: blank's ranges, plus the example's two packages
+git checkout origin/blank -- package-lock.json && npm install   # the lockfile
+# a content conflict: take blank's change and keep the example's lines
 git commit
-git push origin blank              # a normal push; the PR check runs on blank
+git push origin main               # a normal push; the PR check runs on main
 ```
-
-Changes on `main` to files `blank` keeps unchanged, or changes away from the
-lines `blank` edits, merge without a conflict.
 
 ## Learn more
 
