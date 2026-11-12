@@ -282,10 +282,11 @@ git clone --branch blank --single-branch https://github.com/linked-fw/app-templa
 `blank` is the base. Tooling changes, framework ranges and Renovate's bumps
 land on `blank`; only changes to the example land on `main`.
 `.github/workflows/sync-main.yml` keeps `main` current: on every push to
-`blank` it merges `blank` into `main` with a merge commit and pushes it (never a
-force push), which starts the PR check on `main`. The push uses the linked-fw
-release app's token; a merge that changes a file under `.github/workflows/`
-needs that app to hold `workflows: write`.
+`blank` it merges `blank` into `main` with a merge commit on the branch
+`sync/blank-into-main` and opens a pull request into `main` (`main` is
+protected); merge it with a merge commit once its check is green. The push and
+the PR use the linked-fw release app's token; a merge that changes a file under
+`.github/workflows/` needs that app to hold `workflows: write`.
 
 When the merge conflicts, the job fails, names the conflicted files in its
 summary, and pushes nothing. The expected cases are a file both edit (the
@@ -294,13 +295,13 @@ packages too. Resolve it by hand, keeping `main`'s example:
 
 ```bash
 git fetch origin
-git switch main && git pull --ff-only
+git switch -c sync/blank-into-main origin/main
 git merge origin/blank
 # package.json: blank's ranges, plus the example's two packages
 git checkout origin/blank -- package-lock.json && npm install   # the lockfile
 # a content conflict: take blank's change and keep the example's lines
 git commit
-git push origin main               # a normal push; the PR check runs on main
+git push -u origin sync/blank-into-main   # then open a PR into main; merge it with a merge commit
 ```
 
 ## Learn more
