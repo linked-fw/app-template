@@ -1,6 +1,6 @@
-// Smoke test for the blank app: boots `linked start` (the Vite dev server, with
-// its pre-bundled client dependencies) against a real Fuseki and checks in
-// Chromium that the home page renders the app's name, in two layouts:
+// Smoke test for the People example: boots `linked start` (the Vite dev server,
+// with its pre-bundled client dependencies) against a real Fuseki and drives the
+// screen in Chromium, in two layouts:
 //
 // - `template`: this repository as it is, in a scratch copy;
 // - `project`: the app as Create Now generates it, with an ontology and an asset
@@ -36,9 +36,6 @@ if (!process.env.E2E_DATASET) {
   process.env.E2E_DATASET_GENERATED = '1';
 }
 const dataset = process.env.E2E_DATASET;
-// The name the home page must render, injected as APP_NAME (as a host does).
-process.env.E2E_APP_NAME ||= `Smoke App ${Date.now()}`;
-const appName = process.env.E2E_APP_NAME;
 
 const port = Number(process.env.E2E_PORT || 4517);
 // One scratch copy per layout and port, replaced on every run (see
@@ -57,7 +54,6 @@ function appEnv(origin: string, appPort: number, appDataset: string) {
     DATA_ROOT: `${origin}/data`,
     FUSEKI_DATASET: appDataset,
     LINKED_DATASET_ENSURE: '1',
-    APP_NAME: appName,
   };
 }
 
@@ -80,12 +76,12 @@ export default defineConfig({
   projects: [
     {
       name: 'template',
-      testMatch: 'home.spec.ts',
+      testMatch: 'people.spec.ts',
       use: { baseURL: templateOrigin },
     },
     {
       name: 'project',
-      testMatch: 'home.spec.ts',
+      testMatch: 'people.spec.ts',
       use: { baseURL: projectOrigin },
     },
     { name: 'data-server-boot', testMatch: 'data-server-boot.spec.ts' },

@@ -1,6 +1,12 @@
 import React from 'react';
+import { Header } from './Header';
 import style from './DefaultLayout.module.css';
 
 export function DefaultLayout({ children }: React.PropsWithChildren) {
-  return <main className={style.main}>{children}</main>;
+  return (
+    <main className={style.main}>
+      <Header />
+      {children}
+    </main>
+  );
 }

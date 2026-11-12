@@ -22,8 +22,15 @@ import { loadStores } from '@_linked/core/utils/loadStores';
 import { LinkedStorage } from '@_linked/core/utils/LinkedStorage';
 import type { IDataset } from '@_linked/core/interfaces/IDataset';
 import { RemoteDataset } from '@_linked/server/shapes/quadstores/RemoteDataset';
+import { withAccess } from '@_linked/server-utils/utils/QueryAccess';
+import { getSuperShapesClasses } from '@_linked/core/utils/ShapeClass';
+import { Person } from '@_linked/schema/shapes/Person';
 import { shouldEnsureDataset } from './src/utils/datasetEnsure';
 import { dataServerMessage } from './src/utils/storageErrors';
+import {
+  allowsAnonymousExampleWrites,
+  exampleAccess,
+} from './src/utils/exampleAccess';
 import { appDataLogLine } from './src/utils/storageLog';
 
 // Resolve ${VAR} placeholders against the runtime environment.
@@ -94,12 +101,26 @@ if (shouldEnsureDataset(process.env.LINKED_DATASET_ENSURE)) {
     .catch((err) => console.warn('dataset check failed:', err));
 }
 
-// Who may query this store from the client: the server's default rule, a
-// signed-in session for every write (and for every read once rpcExposure is
-// 'enforce'). Attach your own rules with `withAccess` from
-// '@_linked/server-utils/utils/QueryAccess'.
+// Who may query this store from the client (see src/utils/exampleAccess.ts).
+// Without a rule every write, and once rpcExposure is 'enforce' every read,
+// needs a signed-in session, which this template has no way to create. This
+// rule opens exactly the home page example: anonymous reads of Person, and
+// anonymous writes of Person only under NODE_ENV=development. Everything else
+// still needs a session. Remove it with the example.
+const exampleShapes = new Set(
+  [Person, ...getSuperShapesClasses(Person)]
+    .map((shape) => shape.shape?.id)
+    .filter((id): id is string => !!id),
+);
+withAccess(
+  main,
+  exampleAccess(
+    exampleShapes,
+    allowsAnonymousExampleWrites(process.env.NODE_ENV),
+  ),
+);
 
 // Shape → alias. Single alias → default for every shape. For multi-alias
 // add per-shape pins, e.g.:
-//   LinkedStorage.setDatasetForShapes(stores.main, [MyShape]);
+//   LinkedStorage.setDatasetForShapes(stores.main, [Person]);
 LinkedStorage.setDefaultDataset(main);
