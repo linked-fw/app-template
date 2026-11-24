@@ -175,7 +175,7 @@ axiom there:
 At boot, before it syncs its shapes, the app writes the `rdfs:subClassOf`
 triples of every registered package's ontology data into its dataset (the
 ontology sync; a package whose data has not changed is skipped), so the store
-infers from them. It follows `syncShapesOnBoot` in `linked.config.js`;
+infers from them. It follows `syncShapesOnBoot` in `linked.app.json`;
 `LINKED_SYNC_ONTOLOGIES_ON_BOOT=false` turns it off alone. When both classes
 have shapes, the subclass's shape must extend the superclass's; the boot logs a
 warning for each shape that does not (core's shape check).
@@ -198,13 +198,20 @@ The client runs queries through the server's generic query endpoints (`/call/@_l
 
 So the home page form works under `npm start` (`.env.example` sets `NODE_ENV=development`). The compiled build (`npm run build`, `npm run serve-app`) runs with `NODE_ENV=production`: it still lists people, but adding, editing or deleting one answers `401 Authentication required` until the app has sign-in. A rule belongs to a store, not a shape: a query it admits can address any node in that store's dataset by id, through the example shapes. That is acceptable for example data in development, and it is why anonymous writes stay out of production. Remove the rule together with the example.
 
+## Settings
+
+`linked.app.json` holds the app's settings as JSON: its prefix map (`prefixes`,
+filled by `linked prefixes`), `cssMode`, `syncShapesOnBoot` and the server's
+(`server.rpcExposure`, `server.rawQueries`, …). The `@_linked/cli` README lists
+every key.
+
 ## Raw SPARQL
 
 `POST /api/select-raw` runs raw SPARQL against the default store. A raw query
 cannot be checked for what it reads, so the server's `rawQueries` setting
 decides who may run one: `'session'` (the default) allows any signed-in
-session, `'off'` refuses every raw query. Set it in `linked.config.js`
-(`server: { rawQueries: 'off' }`) or with `LINKED_RAW_QUERIES`.
+session, `'off'` refuses every raw query. Set it in `linked.app.json`
+(`"server": {"rawQueries": "off"}`) or with `LINKED_RAW_QUERIES`.
 
 Run the tests with `npm test`.
 
