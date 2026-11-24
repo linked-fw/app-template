@@ -175,7 +175,7 @@ axiom there:
 At boot, before it syncs its shapes, the app writes the `rdfs:subClassOf`
 triples of every registered package's ontology data into its dataset (the
 ontology sync; a package whose data has not changed is skipped), so the store
-infers from them. It follows `syncShapesOnBoot` in `linked.config.js`;
+infers from them. It follows `syncShapesOnBoot` in `linked.app.json`;
 `LINKED_SYNC_ONTOLOGIES_ON_BOOT=false` turns it off alone. When both classes
 have shapes, the subclass's shape must extend the superclass's; the boot logs a
 warning for each shape that does not (core's shape check).
@@ -190,13 +190,20 @@ or `.env`); the package then records it as `baseUri` in its `src/package.ts`.
 
 The client runs queries through the server's generic query endpoints (`/call/@_linked/server/*Query`). This app attaches no rule of its own, so the server's default applies: a signed-in session for every write, and for every read once `rpcExposure` is `'enforce'`. To open part of the store to anonymous callers, attach a rule to the store in `linked.backend.storage.ts` with `withAccess` (from `@_linked/server-utils/utils/QueryAccess`).
 
+## Settings
+
+`linked.app.json` holds the app's settings as JSON: its prefix map (`prefixes`,
+filled by `linked prefixes`), `cssMode`, `syncShapesOnBoot` and the server's
+(`server.rpcExposure`, `server.rawQueries`, …). The `@_linked/cli` README lists
+every key.
+
 ## Raw SPARQL
 
 `POST /api/select-raw` runs raw SPARQL against the default store. A raw query
 cannot be checked for what it reads, so the server's `rawQueries` setting
 decides who may run one: `'session'` (the default) allows any signed-in
-session, `'off'` refuses every raw query. Set it in `linked.config.js`
-(`server: { rawQueries: 'off' }`) or with `LINKED_RAW_QUERIES`.
+session, `'off'` refuses every raw query. Set it in `linked.app.json`
+(`"server": {"rawQueries": "off"}`) or with `LINKED_RAW_QUERIES`.
 
 Run the tests with `npm test`.
 
